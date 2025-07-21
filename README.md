@@ -1,0 +1,3 @@
+自用主页面模板（实在不愿意一次又一次重新写，累死了😮‍💨），技术栈nextjs，react，authjs，shadecn，tailwindcss，支持暗黑模式切换，具备响应式布局等……
+<img width="2560" height="1398" alt="image" src="https://github.com/user-attachments/assets/bc2e7247-f4c2-4417-9e10-792f2548af26" />
+<img width="727" height="1405" alt="image" src="https://github.com/user-attachments/assets/9c424742-1138-4e2d-bb7e-9531b0f1504c" />
