@@ -126,7 +126,7 @@ export async function POST(req: Request) {
     } catch (createError) {
       console.error("Failed to create website:", createError);
       return NextResponse.json(
-        { error: `Database error: ${createError?.message}` },
+        { error: `Database error: ${createError.message}` },
         { status: 500 }
       );
     }

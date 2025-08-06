@@ -2,14 +2,12 @@
 
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import SignOutButton from "@/components/SignOutButton";
-import { Bell, MessageSquare, Menu, PanelLeft, PanelLeftClose, X } from "lucide-react";
+import { Bell, MessageSquare, Menu, Search, X } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
-import { useSidebar } from "@/context/SidebarContext";
 
 export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  const { isExpanded, toggleSidebar, isMobile } = useSidebar();
 
   // Handle outside click to close mobile menu
   useEffect(() => {
@@ -26,27 +24,11 @@ export function Navbar() {
   }, []);
 
   return (
-    <header className="h-16 w-full border-b border-border/40 bg-background fixed top-0 right-0 left-0 flex items-center px-4 z-30">
+    <header className="h-16 w-full border-b border-border/40 bg-background flex items-center px-4 z-10">
       <div className="flex items-center w-full justify-between">
         <div className="flex items-center">
-          {/* Sidebar toggle for mobile menu bar */}
-          {isMobile && (
-            <button
-              onClick={toggleSidebar}
-              className="p-2 mr-2"
-              aria-label={isExpanded ? "Collapse sidebar" : "Expand sidebar"}
-            >
-              {isExpanded ? <PanelLeftClose className="h-5 w-5" /> : <PanelLeft className="h-5 w-5" />}
-            </button>
-          )}
-
-          {/* Title is always shown in navbar regardless of sidebar state */}
-          <div className="font-semibold text-xl transition-all duration-300 hidden md:block">
-            Dashboard
-          </div>
-
-          {/* Mobile title - always shown on mobile */}
-          <div className="font-semibold text-xl md:hidden">
+          {/* Title */}
+          <div className="font-semibold text-xl">
             Dashboard
           </div>
         </div>
@@ -70,7 +52,7 @@ export function Navbar() {
 
           <div className="h-8 w-px bg-gray-200 dark:bg-gray-700 mx-2 hidden md:block" />
 
-          {/* Mobile menu button moved to right */}
+          {/* Mobile menu button */}
           <div className="md:hidden">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -92,7 +74,6 @@ export function Navbar() {
           }`}
       >
         <div className="flex flex-col space-y-3 p-4">
-          <div className="font-semibold">Dashboard</div>
           <button
             className="flex items-center gap-2 py-2"
             aria-label="Notifications"
