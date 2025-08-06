@@ -141,7 +141,7 @@ function similarity(s1: string, s2: string): number {
 
   if (longer.length === 0) return 1.0;
 
-  const matchCount = [...shorter].reduce((acc, char, i) =>
+  const matchCount = [...shorter].reduce((acc, char) =>
     acc + (longer.includes(char) ? 1 : 0), 0);
 
   return matchCount / longer.length;

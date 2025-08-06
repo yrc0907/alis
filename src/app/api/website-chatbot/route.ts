@@ -1,16 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 
-// 系统提示词，定义聊天机器人行为和特点
-const SYSTEM_PROMPT = `你是一个友善、专业的AI助手。
-你需要以简洁、有帮助的方式回答用户的问题。
-如果你不知道某个问题的答案，诚实地承认，不要编造信息。
-当用户表达预约意向时，你应该询问他们想要预约的时间、联系方式，并告诉他们可以通过下方的预约按钮进行预约。`;
 
-// 默认配置
-const DEFAULT_MODEL = "deepseek-chat";
-const DEFAULT_MAX_TOKENS = 2000;
-const DEFAULT_TEMPERATURE = 0.7;
 
 // 检测用户兴趣的关键词
 const INTEREST_KEYWORDS = {
@@ -159,24 +150,6 @@ function similarity(s1: string, s2: string): number {
   return matchCount / longer.length;
 }
 
-// 流式响应中使用知识库答案
-async function streamKnowledgeBaseAnswer(answer: string, controller: ReadableStreamController<Uint8Array>): Promise<void> {
-  try {
-    // 将知识库答案分成小块进行流式传输，模拟真实打字效果
-    const chunkSize = 4; // 每块字符数
-    for (let i = 0; i < answer.length; i += chunkSize) {
-      const chunk = answer.substring(i, i + chunkSize);
-      controller.enqueue(new TextEncoder().encode(encodeStreamData({ content: chunk })));
-
-      // 添加一点延迟以模拟真实打字
-      await new Promise(resolve => setTimeout(resolve, 30));
-    }
-    controller.close();
-  } catch (error) {
-    controller.enqueue(new TextEncoder().encode(encodeStreamData({ content: "知识库数据流式传输出错。" })));
-    controller.close();
-  }
-}
 
 // 流式响应 - 调用DeepSeek API
 async function generateStreamingResponse(
@@ -186,6 +159,7 @@ async function generateStreamingResponse(
 ): Promise<Response | null> {
   try {
     // 获取API密钥
+    console.log('username', userName)
     const apiKey = process.env.DEEPSEEK_API_KEY;
     if (!apiKey) {
       console.error("Missing DEEPSEEK_API_KEY in environment variables");

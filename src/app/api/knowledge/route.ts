@@ -2,8 +2,6 @@ import { NextResponse } from 'next/server';
 import {
   loadKnowledgeBase,
   addKnowledgeItem,
-  updateKnowledgeItem,
-  deleteKnowledgeItem
 } from '@/lib/knowledge-base';
 
 export async function GET() {

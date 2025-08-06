@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -131,7 +130,6 @@ export default function AppointmentsPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<AppointmentStatus | "all">("all");
   const [dialogView, setDialogView] = useState<'details' | 'reject' | 'reschedule'>('details');
-  const router = useRouter();
 
   // 获取预约数据
   useEffect(() => {

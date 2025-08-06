@@ -24,7 +24,6 @@ import {
 import {
   Table,
   TableBody,
-  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
@@ -47,7 +46,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import { BarChart2, PieChart as PieChartIcon, LineChart as LineChartIcon, Users, Search, Activity } from "lucide-react";
+import { LineChart as LineChartIcon, Users, Search, Activity } from "lucide-react";
 
 interface Website {
   id: string;
@@ -171,7 +170,7 @@ export default function InterestsPage() {
   const [websites, setWebsites] = useState<Website[]>([]);
   const [selectedWebsite, setSelectedWebsite] = useState("all");
   const [selectedTimeRange, setSelectedTimeRange] = useState("30");
-  const [isLoading, setIsLoading] = useState(true);
+  const [, setIsLoading] = useState(true);
 
   // 获取网站列表
   useEffect(() => {

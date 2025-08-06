@@ -184,10 +184,11 @@ export async function POST(req: Request) {
       appointment,
       { status: 201, headers: corsHeaders() }
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error creating appointment:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: `Failed to create appointment: ${error.message || 'Unknown error'}` },
+      { error: `Failed to create appointment: ${errorMessage}` },
       { status: 500, headers: corsHeaders() }
     );
   }
