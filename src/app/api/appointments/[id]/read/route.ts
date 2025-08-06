@@ -4,7 +4,6 @@ import { auth } from '@/auth';
 
 // 标记预约为已读
 export async function POST(
-  req: Request,
   { params }: { params: { id: string } }
 ) {
   try {
@@ -18,6 +17,7 @@ export async function POST(
       );
     }
 
+    // test
     const appointmentId = params.id;
 
     // 获取预约
