@@ -6,6 +6,7 @@ interface Message {
   text: string;
   sender: 'user' | 'bot';
   timestamp: Date;
+  isDebug?: boolean;
 }
 
 interface ChatbotProps {
@@ -86,14 +87,32 @@ export default function Chatbot({
       const data = await response.json();
 
       // Add bot response
+      // 检查响应中是否包含调试信息
+      const hasDebugPrefix = typeof data.message === 'string' && data.message.startsWith('调试信息:');
+      const debugInfo = data.debug ? JSON.stringify(data.debug, null, 2) : '';
+
       const botMessage: Message = {
         id: Date.now().toString(),
         text: data.message || "Sorry, I couldn't process your request.",
         sender: 'bot',
         timestamp: new Date(),
+        isDebug: hasDebugPrefix
       };
 
+      // 如果有额外的调试信息，添加调试消息
       setMessages(prev => [...prev, botMessage]);
+
+      // 如果有调试信息对象，显示详细调试信息
+      if (debugInfo) {
+        const debugMessage: Message = {
+          id: `debug-${Date.now()}`,
+          text: `调试数据: ${debugInfo}`,
+          sender: 'bot',
+          timestamp: new Date(),
+          isDebug: true
+        };
+        setMessages(prev => [...prev, debugMessage]);
+      }
     } catch (error) {
       // Add error message
       const errorMessage: Message = {
@@ -183,14 +202,28 @@ export default function Chatbot({
                   <div
                     className={`rounded-lg px-4 py-2 ${message.sender === 'user'
                       ? 'bg-gray-200 text-gray-800'
-                      : `text-white`
+                      : message.isDebug
+                        ? 'bg-gray-700 text-white'
+                        : `text-white`
                       }`}
                     style={{
-                      backgroundColor: message.sender === 'user' ? '#f1f5f9' : primaryColor,
+                      backgroundColor:
+                        message.sender === 'user'
+                          ? '#f1f5f9'
+                          : message.isDebug
+                            ? '#334155' // 深灰色用于调试信息
+                            : primaryColor,
                       maxWidth: '80%'
                     }}
                   >
-                    <p className="text-sm">{message.text}</p>
+                    {message.isDebug ? (
+                      <div>
+                        <p className="text-xs font-mono mb-1 text-orange-300">DEBUG INFO</p>
+                        <p className="text-sm font-mono whitespace-pre-wrap">{message.text}</p>
+                      </div>
+                    ) : (
+                      <p className="text-sm">{message.text}</p>
+                    )}
                   </div>
                 </div>
               ))}
