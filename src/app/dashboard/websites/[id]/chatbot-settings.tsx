@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -68,7 +68,7 @@ export default function ChatbotSettings({ websiteId }: ChatbotSettingsProps) {
   }, [config.welcomeMessage]);
 
   // 获取聊天机器人配置
-  const fetchChatbotConfig = async () => {
+  const fetchChatbotConfig = useCallback(async () => {
     try {
       setLoading(true);
       // 在实际应用中，这里应该从API获取配置
@@ -84,7 +84,7 @@ export default function ChatbotSettings({ websiteId }: ChatbotSettingsProps) {
       console.error("Error fetching chatbot config:", error);
       setLoading(false);
     }
-  };
+  }, [config, websiteId]);
 
   // 保存聊天机器人配置
   const saveChatbotConfig = async () => {
@@ -117,7 +117,7 @@ export default function ChatbotSettings({ websiteId }: ChatbotSettingsProps) {
     if (websiteId) {
       fetchChatbotConfig();
     }
-  }, [websiteId]);
+  }, [websiteId, fetchChatbotConfig]);
 
   // 处理发送消息
   const handleSendMessage = () => {
@@ -299,6 +299,7 @@ export default function ChatbotSettings({ websiteId }: ChatbotSettingsProps) {
                   <div className="p-4 flex items-center justify-between" style={{ backgroundColor: config.primaryColor, color: 'white' }}>
                     <div className="flex items-center">
                       {config.avatarUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
                         <img src={config.avatarUrl} alt="Avatar" className="w-8 h-8 rounded-full mr-3" />
                       ) : (
                         <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center mr-3">
@@ -323,6 +324,7 @@ export default function ChatbotSettings({ websiteId }: ChatbotSettingsProps) {
                       msg.type === "bot" ? (
                         <div className="flex" key={index}>
                           {config.avatarUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
                             <img src={config.avatarUrl} alt="Avatar" className="w-8 h-8 rounded-full mr-2 flex-shrink-0" />
                           ) : (
                             <div className="w-8 h-8 rounded-full flex-shrink-0" style={{ backgroundColor: config.primaryColor }}>
@@ -350,6 +352,7 @@ export default function ChatbotSettings({ websiteId }: ChatbotSettingsProps) {
                     {isTyping && (
                       <div className="flex">
                         {config.avatarUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
                           <img src={config.avatarUrl} alt="Avatar" className="w-8 h-8 rounded-full mr-2 flex-shrink-0" />
                         ) : (
                           <div className="w-8 h-8 rounded-full flex-shrink-0" style={{ backgroundColor: config.primaryColor }}>
