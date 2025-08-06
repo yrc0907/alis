@@ -78,7 +78,7 @@ async function streamKnowledgeBaseAnswer(answer: string, controller: ReadableStr
       await new Promise(resolve => setTimeout(resolve, 30));
     }
     controller.close();
-  } catch (error) {
+  } catch {
     controller.enqueue(new TextEncoder().encode(encodeStreamData("知识库数据流式传输出错。")));
     controller.close();
   }
@@ -156,7 +156,7 @@ async function generateStreamingResponse(messages: ChatMessage[], controller: Re
               if (content) {
                 controller.enqueue(new TextEncoder().encode(encodeStreamData(content)));
               }
-            } catch (e) {
+            } catch {
               // 忽略解析错误
             }
           }
@@ -173,17 +173,18 @@ async function generateStreamingResponse(messages: ChatMessage[], controller: Re
               controller.enqueue(new TextEncoder().encode(encodeStreamData(content)));
             }
           }
-        } catch (e) {
+        } catch {
           // 忽略解析错误
+          console.error('解析错误', buffer);
         }
       }
 
-    } catch (error) {
+    } catch {
       controller.enqueue(new TextEncoder().encode(encodeStreamData("读取AI响应时发生错误。请稍后再试。")));
     } finally {
       controller.close();
     }
-  } catch (error) {
+  } catch {
     controller.enqueue(new TextEncoder().encode(encodeStreamData("抱歉，AI响应生成失败。请稍后再试。")));
     controller.close();
   }
@@ -240,12 +241,17 @@ async function generateAIResponse(messages: ChatMessage[]): Promise<string> {
       }
 
       return data.choices[0].message.content;
-    } catch (parseError) {
+    } catch {
       return "抱歉，解析AI响应时出错。请稍后再试。";
     }
-  } catch (error) {
+  } catch {
     return "抱歉，AI响应生成失败。请稍后再试。";
   }
+}
+
+interface HistoryMessage {
+  sender: 'user' | 'assistant';
+  text: string;
 }
 
 export async function POST(req: Request) {
@@ -264,7 +270,7 @@ export async function POST(req: Request) {
     }
 
     // 转换消息历史为DeepSeek API格式
-    const formattedHistory: ChatMessage[] = history.map((msg: any) => ({
+    const formattedHistory: ChatMessage[] = history.map((msg: HistoryMessage) => ({
       role: msg.sender === 'user' ? 'user' : 'assistant',
       content: msg.text
     }));
@@ -299,7 +305,7 @@ export async function POST(req: Request) {
         { headers: corsHeaders() }
       );
     }
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: 'Internal server error' },
       {

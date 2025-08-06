@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { auth } from '@/auth';
+import { Prisma } from '@prisma/client';
 
 // 获取用户兴趣数据
 export async function GET(req: Request) {
@@ -27,7 +28,7 @@ export async function GET(req: Request) {
     startDate.setDate(startDate.getDate() - period);
 
     // 构建查询条件
-    const whereCondition: any = {
+    const whereCondition: Prisma.UserInterestWhereInput = {
       createdAt: {
         gte: startDate,
         lte: endDate

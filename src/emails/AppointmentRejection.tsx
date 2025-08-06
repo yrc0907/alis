@@ -5,7 +5,6 @@ import {
   Heading,
   Html,
   Img,
-  Link,
   Preview,
   Section,
   Text,
@@ -17,7 +16,6 @@ interface AppointmentRejectionEmailProps {
   appointmentDate?: Date;
   rejectionReason?: string;
   websiteName?: string;
-  websiteUrl?: string;
 }
 
 const baseUrl = process.env.VERCEL_URL
@@ -29,7 +27,6 @@ export const AppointmentRejectionEmail = ({
   appointmentDate = new Date(),
   rejectionReason = "由于日程冲突，我们无法接受您的预约。",
   websiteName = "我们的团队",
-  websiteUrl = baseUrl,
 }: AppointmentRejectionEmailProps) => (
   <Html>
     <Head />
