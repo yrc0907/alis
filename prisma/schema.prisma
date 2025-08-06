@@ -23,6 +23,7 @@ model User {
   sessions      Session[]
   websites      Website[] // 用户可以拥有多个网站
   appointments  Appointment[] // 用户的预约记录
+  interests     UserInterest[] // 用户的兴趣记录
 }
 
 model Session {
@@ -131,6 +132,8 @@ model UserInterest {
   createdAt     DateTime    @default(now())
   websiteId     String      // 所属网站
   website       Website     @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  userId        String?     // 关联的用户ID（如果适用）
+  user          User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
   chatSessionId String?     // 关联的聊天会话ID，如果适用
   chatSession   ChatSession? @relation(fields: [chatSessionId], references: [id], onDelete: SetNull)
 }
