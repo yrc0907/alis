@@ -1,6 +1,4 @@
-import { ChevronFirst, ChevronLast, MoreVertical } from "lucide-react"
 import Link from 'next/link';
-import { createContext, useContext, useState } from "react"
 
 interface SidebarItemProps {
   icon: React.ReactNode;

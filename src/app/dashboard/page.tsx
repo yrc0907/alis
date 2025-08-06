@@ -142,9 +142,10 @@ export default function DashboardPage() {
 
       // 重定向到新建网站的详情页
       router.push(`/dashboard/websites/${createdWebsite.id}`);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error adding website:", error);
-      setError(error.message);
+      const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+      setError(errorMessage);
     }
   };
 
@@ -419,7 +420,7 @@ export default function DashboardPage() {
                 </div>
                 <div className="flex-1">
                   <p className="text-sm font-medium">新增知识库条目</p>
-                  <p className="text-xs text-muted-foreground">在 "公司网站" 中</p>
+                  <p className="text-xs text-muted-foreground">在 '公司网站' 中</p>
                 </div>
                 <p className="text-xs text-muted-foreground">2 小时前</p>
               </div>

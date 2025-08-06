@@ -1,6 +1,5 @@
 "use client";
 import React, { useState } from "react";
-import { toast } from "sonner";
 import {
   Card,
   CardHeader,
@@ -15,17 +14,13 @@ import { Label } from "@/components/ui/label";
 import { Briefcase, UserRound } from "lucide-react";
 import Link from "next/link";
 
-type Props = {};
-const SignUpForm = (props: Props) => {
+const SignUpForm = () => {
   const [form, setForm] = useState({
     email: "",
     name: "",
     password: "",
     confirmPassword: "",
   });
-  const [isLoading, setIsLoading] = useState(false);
-  const [onOTP, setOnOTP] = useState(false);
-  const [otp, setOtp] = useState("");
   const [type, setType] = useState<"owner" | "student">("owner");
   const [onStemp, setOnStemp] = useState(0);
 

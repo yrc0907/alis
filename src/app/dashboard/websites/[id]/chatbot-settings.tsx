@@ -43,7 +43,7 @@ export default function ChatbotSettings({ websiteId }: ChatbotSettingsProps) {
     maxMessagesInContext: 10,
     streamingEnabled: true
   });
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
@@ -104,9 +104,10 @@ export default function ChatbotSettings({ websiteId }: ChatbotSettingsProps) {
           setSuccess(false);
         }, 3000);
       }, 1000);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error saving chatbot config:", error);
-      setError("保存配置失败，请稍后再试");
+      const errorMessage = error instanceof Error ? error.message : "保存配置失败，请稍后再试";
+      setError(errorMessage);
       setSaving(false);
     }
   };

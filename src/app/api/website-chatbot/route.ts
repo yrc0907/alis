@@ -16,7 +16,7 @@ const INTEREST_KEYWORDS = {
 async function analyzeUserInterest(message: string, websiteId: string, chatSessionId: string, userId?: string) {
   try {
     const normalizedMessage = message.toLowerCase();
-    let detectedInterests = [];
+    const detectedInterests = [];
 
     // 检查各类兴趣关键词
     for (const [interestType, keywords] of Object.entries(INTEREST_KEYWORDS)) {
@@ -41,7 +41,7 @@ async function analyzeUserInterest(message: string, websiteId: string, chatSessi
 
       await prisma.userInterest.create({
         data: {
-          interestType: primaryInterest.type as any,
+          interestType: primaryInterest.type as 'PRODUCT' | 'SERVICE' | 'PRICING' | 'CONTACT' | 'APPOINTMENT',
           interestLevel: primaryInterest.level,
           source: 'CHAT',
           metadata: JSON.stringify({
@@ -144,7 +144,7 @@ function similarity(s1: string, s2: string): number {
 
   if (longer.length === 0) return 1.0;
 
-  const matchCount = [...shorter].reduce((acc, char, i) =>
+  const matchCount = [...shorter].reduce((acc, char) =>
     acc + (longer.includes(char) ? 1 : 0), 0);
 
   return matchCount / longer.length;
@@ -278,9 +278,10 @@ async function generateStreamingResponse(
             }
           }
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('流式处理错误:', error);
-        writer.write(encoder.encode(encodeStreamData({ content: `处理回复时出错: ${error.message}` })));
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        writer.write(encoder.encode(encodeStreamData({ content: `处理回复时出错: ${errorMessage}` })));
         writer.close();
       }
     };
@@ -298,14 +299,14 @@ async function generateStreamingResponse(
       }
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('生成流式响应错误:', error);
     return null;
   }
 }
 
 // 生成非流式AI回复
-async function generateAIResponse(message: string, websiteId: string, userName?: string): Promise<string> {
+async function generateAIResponse(message: string, websiteId: string): Promise<string> {
   try {
     // 获取API密钥
     const apiKey = process.env.DEEPSEEK_API_KEY;
@@ -360,9 +361,10 @@ async function generateAIResponse(message: string, websiteId: string, userName?:
 
     const data = await response.json();
     return data.choices[0].message.content;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('生成AI回复错误:', error);
-    return `抱歉，生成回复时出错: ${error.message}`;
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return `抱歉，生成回复时出错: ${errorMessage}`;
   }
 }
 
@@ -387,7 +389,7 @@ function processStreamBuffer(buffer: string, contentCallback: (content: string) 
         if (content) {
           contentCallback(content);
         }
-      } catch (e) {
+      } catch {
         // 忽略解析错误
       }
     }
@@ -559,7 +561,7 @@ export async function POST(req: Request) {
         console.error('生成流式响应失败');
 
         // 尝试使用非流式响应作为备份
-        const aiResponse = await generateAIResponse(message, websiteId, website.user?.name || undefined);
+        const aiResponse = await generateAIResponse(message, websiteId);
 
         // 创建机器人回复消息
         await prisma.chatMessage.create({
@@ -580,7 +582,7 @@ export async function POST(req: Request) {
       return stream;
     } else {
       // 使用非流式响应
-      const aiResponse = await generateAIResponse(message, websiteId, website.user?.name || undefined);
+      const aiResponse = await generateAIResponse(message, websiteId);
 
       // 创建机器人回复消息
       await prisma.chatMessage.create({
@@ -596,11 +598,12 @@ export async function POST(req: Request) {
         { status: 200, headers }
       );
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('聊天机器人API错误:', error);
 
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: `Error processing request: ${error.message}` },
+      { error: `Error processing request: ${errorMessage}` },
       {
         status: 500,
         headers: corsHeaders()

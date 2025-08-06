@@ -2,7 +2,7 @@
 
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import SignOutButton from "@/components/SignOutButton";
-import { Bell, MessageSquare, Menu, Search, X } from "lucide-react";
+import { Bell, MessageSquare, Menu, X } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 
 export function Navbar() {

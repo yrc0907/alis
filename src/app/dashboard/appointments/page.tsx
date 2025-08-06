@@ -51,6 +51,13 @@ type Appointment = {
   };
 };
 
+// 新增：邮件通知的额外数据类型
+type NotificationData = {
+  reason?: string;
+  newDateTime?: string;
+};
+
+
 // 定义预约状态
 type AppointmentStatus = Appointment['status'];
 
@@ -176,7 +183,7 @@ export default function AppointmentsPage() {
   };
 
   // 发送邮件的通用函数
-  const sendEmailNotification = async (type: 'CONFIRMATION' | 'REJECTION' | 'RESCHEDULED', appointmentId: string, additionalData: any = {}) => {
+  const sendEmailNotification = async (type: 'CONFIRMATION' | 'REJECTION' | 'RESCHEDULED', appointmentId: string, additionalData: NotificationData = {}) => {
     try {
       await fetch('/api/emails/send', {
         method: 'POST',
