@@ -420,7 +420,7 @@ export default function DashboardPage() {
                 </div>
                 <div className="flex-1">
                   <p className="text-sm font-medium">新增知识库条目</p>
-                  <p className="text-xs text-muted-foreground">在 '公司网站' 中</p>
+                  <p className="text-xs text-muted-foreground">在 &apos;公司网站&apos; 中</p>
                 </div>
                 <p className="text-xs text-muted-foreground">2 小时前</p>
               </div>

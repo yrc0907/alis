@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -57,7 +57,7 @@ export default function KnowledgeBase({ websiteId }: KnowledgeBaseProps) {
   });
 
   // 获取知识库条目
-  const fetchKnowledgeItems = async () => {
+  const fetchKnowledgeItems = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetch(`/api/websites/${websiteId}/knowledge`);
@@ -74,10 +74,10 @@ export default function KnowledgeBase({ websiteId }: KnowledgeBaseProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [websiteId]);
 
   // 获取知识库配置
-  const fetchKnowledgeConfig = async () => {
+  const fetchKnowledgeConfig = useCallback(async () => {
     try {
       const response = await fetch(`/api/websites/${websiteId}/config`);
 
@@ -94,7 +94,7 @@ export default function KnowledgeBase({ websiteId }: KnowledgeBaseProps) {
     } catch (error) {
       console.error("Error fetching knowledge config:", error);
     }
-  };
+  }, [websiteId]);
 
   // 更新知识库配置
   const updateConfig = async (newConfig: Partial<KnowledgeConfig>) => {
@@ -218,7 +218,7 @@ export default function KnowledgeBase({ websiteId }: KnowledgeBaseProps) {
       fetchKnowledgeItems();
       fetchKnowledgeConfig();
     }
-  }, [websiteId]);
+  }, [websiteId, fetchKnowledgeItems, fetchKnowledgeConfig]);
 
   return (
     <div className="space-y-6">
