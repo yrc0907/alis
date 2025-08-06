@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { auth } from '@/auth';
-import { Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client'
 
 // 获取用户兴趣数据
 export async function GET(req: Request) {
