@@ -1,11 +1,14 @@
 import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
 import { auth } from '@/auth';
 
+type Params = { params: { id: string } };
+
 // 标记预约为已读
 export async function POST(
-  req: Request,
-  context: { params: { id: string } }
+  req: NextRequest,
+  { params }: Params
 ) {
   try {
     const session = await auth();
@@ -19,7 +22,7 @@ export async function POST(
     }
 
     // test
-    const appointmentId = context.params.id;
+    const appointmentId = params.id;
 
     // 获取预约
     const appointment = await prisma.appointment.findUnique({
