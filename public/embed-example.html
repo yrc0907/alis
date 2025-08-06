@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>嵌入式聊天机器人示例</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.6;
+      margin: 0;
+      padding: 0;
+      color: #333;
+      background-color: #f9fafb;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+      color: #1e293b;
+    }
+
+    .subtitle {
+      font-size: 1.2rem;
+      color: #64748b;
+    }
+
+    .content {
+      background-color: #fff;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+      padding: 30px;
+      margin-bottom: 30px;
+    }
+
+    .code-block {
+      background-color: #f8fafc;
+      border-left: 4px solid #fb923c;
+      padding: 15px;
+      border-radius: 4px;
+      overflow-x: auto;
+      margin: 20px 0;
+    }
+
+    .code-block pre {
+      margin: 0;
+      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+      font-size: 0.9rem;
+    }
+
+    .highlight {
+      background-color: rgba(251, 146, 60, 0.1);
+      padding: 2px 5px;
+      border-radius: 3px;
+    }
+
+    .steps {
+      counter-reset: step-counter;
+      list-style-type: none;
+      padding-left: 0;
+    }
+
+    .steps li {
+      counter-increment: step-counter;
+      margin-bottom: 15px;
+      position: relative;
+      padding-left: 40px;
+    }
+
+    .steps li::before {
+      content: counter(step-counter);
+      position: absolute;
+      left: 0;
+      top: 0;
+      background-color: #fb923c;
+      color: white;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <header>
+      <h1>嵌入式聊天机器人示例</h1>
+      <p class="subtitle">轻松将我们的聊天机器人添加到您的网站</p>
+    </header>
+
+    <div class="content">
+      <h2>什么是嵌入式聊天机器人？</h2>
+      <p>
+        嵌入式聊天机器人是一个可以轻松添加到您网站的交互式聊天界面。
+        它可以帮助您的用户获取信息、解答问题，并提供即时支持。
+      </p>
+      <p>
+        在这个示例页面中，您可以看到我们的聊天机器人已经成功嵌入。
+        尝试点击右下角的聊天图标与机器人进行交互！
+      </p>
+
+      <h2>如何嵌入到您的网站</h2>
+      <p>只需要简单的三个步骤，即可将聊天机器人添加到您的网站：</p>
+
+      <ol class="steps">
+        <li>
+          复制下面的代码片段：
+          <div class="code-block">
+            <pre>&lt;script src="https://your-website.com/chatbot-embed.js" 
+  data-name="Corinna AI"
+  data-message="Hi there! How can I help you today?"
+  data-color="#fb923c"
+  data-position="bottom-right"
+&gt;&lt;/script&gt;</pre>
+          </div>
+        </li>
+        <li>
+          将代码粘贴到您网站的<span class="highlight">&lt;body&gt;</span>标签结束前：
+          <div class="code-block">
+            <pre>&lt;body&gt;
+  <!-- 您网站的内容 -->
+  
+  &lt;script src="https://your-website.com/chatbot-embed.js" 
+    data-name="Corinna AI"
+    data-message="Hi there! How can I help you today?"
+    data-color="#fb923c"
+    data-position="bottom-right"
+  &gt;&lt;/script&gt;
+&lt;/body&gt;</pre>
+          </div>
+        </li>
+        <li>
+          保存并发布您的网站，聊天机器人将自动显示！
+        </li>
+      </ol>
+
+      <h2>自定义选项</h2>
+      <p>您可以通过以下属性自定义聊天机器人的外观和行为：</p>
+      <ul>
+        <li><strong>data-name</strong>: 聊天机器人的名称</li>
+        <li><strong>data-message</strong>: 初始欢迎消息</li>
+        <li><strong>data-color</strong>: 主题颜色（十六进制颜色代码）</li>
+        <li><strong>data-position</strong>: 位置（"bottom-right" 或 "bottom-left"）</li>
+        <li><strong>data-api</strong>: 自定义API端点（可选，默认为"/api/chatbot"）</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 嵌入聊天机器人 -->
+  <script src="chatbot-embed.js" data-name="Corinna AI" data-message="你好！这是一个示例聊天机器人。请尝试发送消息！" data-color="#fb923c"
+    data-position="bottom-right"></script>
+</body>
+
+</html>

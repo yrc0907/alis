@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import LoginForm from "@/components/LoginForm";
+import AuthLayout from "@/components/AuthLayout";
 
 export const metadata: Metadata = {
   title: "Login",
@@ -8,10 +9,8 @@ export const metadata: Metadata = {
 
 export default function LoginPage() {
   return (
-    <div className="flex min-h-[calc(100vh-4rem)] flex-col items-center justify-center py-12">
-      <div className="w-full max-w-md px-4">
-        <LoginForm />
-      </div>
-    </div>
+    <AuthLayout>
+      <LoginForm />
+    </AuthLayout>
   );
 } 
