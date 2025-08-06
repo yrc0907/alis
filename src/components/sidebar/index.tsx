@@ -2,18 +2,18 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Users, Settings, Calendar, BarChart4, ChevronRight, ChevronLeft, PanelLeftClose, PanelLeft, MessageCircle, Bot, } from "lucide-react";
+import { Home, Users, Settings, Calendar, BarChart4, ChevronRight, ChevronLeft, PanelLeftClose, PanelLeft, MessageCircle, Bot, Globe } from "lucide-react";
 import { useSidebar } from "@/context/SidebarContext";
 import { Logo } from "./Logo";
 
 const navItems = [
-  { icon: Home, label: "Home", href: "/dashboard" },
-  { icon: Users, label: "Users", href: "/dashboard/users" },
-  { icon: Calendar, label: "Calendar", href: "/dashboard/calendar" },
-  { icon: BarChart4, label: "Analytics", href: "/dashboard/analytics" },
+  { icon: Home, label: "主页", href: "/dashboard" },
   { icon: Bot, label: "聊天机器人", href: "/dashboard/chatbot" },
   { icon: MessageCircle, label: "知识库管理", href: "/dashboard/knowledge" },
-  { icon: Settings, label: "Settings", href: "/dashboard/settings" }
+  { icon: Users, label: "用户管理", href: "/dashboard/users" },
+  { icon: Calendar, label: "日历", href: "/dashboard/calendar" },
+  { icon: BarChart4, label: "分析", href: "/dashboard/analytics" },
+  { icon: Settings, label: "设置", href: "/dashboard/settings" }
 ];
 
 const Sidebar = () => {

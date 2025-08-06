@@ -8,6 +8,9 @@
     position: script.getAttribute('data-position') || 'bottom-right',
     // 允许指定完整的API URL
     apiUrl: script.getAttribute('data-api-url'),
+    // 网站特定配置
+    websiteId: script.getAttribute('data-website-id'),
+    apiKey: script.getAttribute('data-api-key'),
     // 提取脚本的来源域名，用于构建API URL
     scriptOrigin: (function () {
       // 获取脚本的src属性
@@ -351,6 +354,8 @@
           mode: 'cors',
           body: JSON.stringify({
             message,
+            websiteId: config.websiteId,
+            apiKey: config.apiKey,
             stream: true
           }),
         });
@@ -426,6 +431,8 @@
           mode: 'cors',
           body: JSON.stringify({
             message,
+            websiteId: config.websiteId,
+            apiKey: config.apiKey,
             stream: false
           }),
         });

@@ -21,6 +21,7 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   sessions      Session[]
+  websites      Website[] // 用户可以拥有多个网站
 }
 
 model Session {
@@ -29,4 +30,42 @@ model Session {
   userId       String
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// 网站模型
+model Website {
+  id             String            @id @default(cuid())
+  name           String            // 网站名称
+  domain         String            // 网站域名
+  description    String?           // 网站描述
+  apiKey         String            @unique @default(cuid()) // 用于API认证
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  userId         String            // 所属用户
+  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  knowledgeItems KnowledgeItem[]   // 网站的知识库条目
+  config         KnowledgeConfig?  // 网站的知识库配置
+}
+
+// 知识库条目模型
+model KnowledgeItem {
+  id        String   @id @default(cuid())
+  question  String   // 问题
+  answer    String   // 答案
+  keywords  String   // 关键词列表，用逗号分隔
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  websiteId String   // 所属网站
+  website   Website  @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+}
+
+// 知识库配置模型
+model KnowledgeConfig {
+  id        String   @id @default(cuid())
+  enabled   Boolean  @default(true) // 是否启用知识库
+  threshold Float    @default(0.7)  // 匹配阈值
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  websiteId String   @unique        // 一个网站只能有一个配置
+  website   Website  @relation(fields: [websiteId], references: [id], onDelete: Cascade)
 }
