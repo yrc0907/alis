@@ -17,6 +17,7 @@ export async function POST(
       );
     }
 
+    // test
     const appointmentId = params.id;
 
     // 获取预约
