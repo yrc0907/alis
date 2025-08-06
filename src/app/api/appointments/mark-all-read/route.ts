@@ -17,7 +17,7 @@ export async function POST() {
       select: { id: true },
     });
 
-    const websiteIds = userWebsites.map(site => site.id);
+    const websiteIds = userWebsites.map((site: { id: string }) => site.id);
 
     // 如果用户没有任何网站，直接返回成功
     if (websiteIds.length === 0) {
