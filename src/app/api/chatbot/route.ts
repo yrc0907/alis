@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { queryKnowledgeBase } from '@/lib/knowledge-base';
 
 // 支持跨域请求的函数
 function corsHeaders() {
@@ -64,9 +65,38 @@ function encodeStreamData(chunk: string): string {
   return `data: ${JSON.stringify({ content: chunk })}\n\n`;
 }
 
+// 流式响应中使用知识库答案
+async function streamKnowledgeBaseAnswer(answer: string, controller: ReadableStreamController<Uint8Array>): Promise<void> {
+  try {
+    // 将知识库答案分成小块进行流式传输，模拟真实打字效果
+    const chunkSize = 4; // 每块字符数
+    for (let i = 0; i < answer.length; i += chunkSize) {
+      const chunk = answer.substring(i, i + chunkSize);
+      controller.enqueue(new TextEncoder().encode(encodeStreamData(chunk)));
+
+      // 添加一点延迟以模拟真实打字
+      await new Promise(resolve => setTimeout(resolve, 30));
+    }
+    controller.close();
+  } catch (error) {
+    controller.enqueue(new TextEncoder().encode(encodeStreamData("知识库数据流式传输出错。")));
+    controller.close();
+  }
+}
+
 // 调用DeepSeek API生成回复 - 流式响应版本
 async function generateStreamingResponse(messages: ChatMessage[], controller: ReadableStreamController<Uint8Array>): Promise<void> {
   try {
+    // 首先检查是否有知识库匹配
+    const userQuestion = messages[messages.length - 1].content;
+    const knowledgeMatch = queryKnowledgeBase(userQuestion);
+
+    if (knowledgeMatch) {
+      // 如果找到知识库匹配，直接返回知识库答案
+      await streamKnowledgeBaseAnswer(knowledgeMatch.answer, controller);
+      return;
+    }
+
     const apiKey = process.env.DEEPSEEK_API_KEY;
     if (!apiKey) {
       controller.enqueue(new TextEncoder().encode(encodeStreamData("抱歉，AI服务当前不可用。请联系管理员设置API密钥。")));
@@ -161,6 +191,15 @@ async function generateStreamingResponse(messages: ChatMessage[], controller: Re
 
 // 非流式版本的API调用 - 用于不支持流式传输的场景
 async function generateAIResponse(messages: ChatMessage[]): Promise<string> {
+  // 首先检查是否有知识库匹配
+  const userQuestion = messages[messages.length - 1].content;
+  const knowledgeMatch = queryKnowledgeBase(userQuestion);
+
+  if (knowledgeMatch) {
+    // 如果找到知识库匹配，直接返回知识库答案
+    return knowledgeMatch.answer;
+  }
+
   const apiKey = process.env.DEEPSEEK_API_KEY;
 
   if (!apiKey) {
