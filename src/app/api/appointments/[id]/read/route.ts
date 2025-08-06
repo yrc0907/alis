@@ -4,11 +4,12 @@ import { auth } from '@/auth';
 
 // 标记预约为已读
 export async function POST(
+  req: Request,
   { params }: { params: { id: string } }
 ) {
   try {
     const session = await auth();
-
+    console.log(req);
     // 验证用户是否已登录
     if (!session?.user) {
       return NextResponse.json(
