@@ -5,7 +5,7 @@ import { auth } from '@/auth';
 // 获取单个网站信息
 export async function GET(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
@@ -19,7 +19,7 @@ export async function GET(
     }
 
     const userId = session.user.id;
-    const { id } = params;
+    const id = (await params).id;
 
     // 查询网站，同时验证所有权
     const website = await prisma.website.findFirst({
@@ -52,7 +52,7 @@ export async function GET(
 // 更新网站信息
 export async function PUT(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
@@ -66,7 +66,7 @@ export async function PUT(
     }
 
     const userId = session.user.id;
-    const { id } = params;
+    const id = (await params).id;
     const { name, domain, description } = await req.json();
 
     // 验证必填字段
@@ -135,7 +135,7 @@ export async function PUT(
 // 删除网站
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
@@ -149,7 +149,7 @@ export async function DELETE(
     }
 
     const userId = session.user.id;
-    const { id } = params;
+    const id = (await params).id;
 
     // 验证网站是否存在并且属于当前用户
     const website = await prisma.website.findFirst({

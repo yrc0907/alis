@@ -5,7 +5,7 @@ import { auth } from '@/auth';
 // 获取单个知识条目
 export async function GET(
   req: Request,
-  { params }: { params: { id: string; itemId: string } }
+  { params }: { params: Promise<{ id: string; itemId: string }> }
 ) {
   try {
     const session = await auth();
@@ -19,7 +19,9 @@ export async function GET(
     }
 
     const userId = session.user.id;
-    const { id: websiteId, itemId } = params;
+    const awaitedParams = await params;
+    const websiteId = awaitedParams.id;
+    const itemId = awaitedParams.itemId;
 
     // 确认网站存在并且属于当前用户
     const website = await prisma.website.findFirst({
@@ -64,7 +66,7 @@ export async function GET(
 // 更新知识条目
 export async function PUT(
   req: Request,
-  { params }: { params: { id: string; itemId: string } }
+  { params }: { params: Promise<{ id: string; itemId: string }> }
 ) {
   try {
     const session = await auth();
@@ -78,7 +80,9 @@ export async function PUT(
     }
 
     const userId = session.user.id;
-    const { id: websiteId, itemId } = params;
+    const awaitedParams = await params;
+    const websiteId = awaitedParams.id;
+    const itemId = awaitedParams.itemId;
     const { question, answer, keywords } = await req.json();
 
     // 验证必填字段
@@ -152,7 +156,7 @@ export async function PUT(
 // 删除知识条目
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string; itemId: string } }
+  { params }: { params: Promise<{ id: string; itemId: string }> }
 ) {
   try {
     const session = await auth();
@@ -166,7 +170,9 @@ export async function DELETE(
     }
 
     const userId = session.user.id;
-    const { id: websiteId, itemId } = params;
+    const awaitedParams = await params;
+    const websiteId = awaitedParams.id;
+    const itemId = awaitedParams.itemId;
 
     // 确认网站存在并且属于当前用户
     const website = await prisma.website.findFirst({

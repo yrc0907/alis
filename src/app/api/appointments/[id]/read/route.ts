@@ -2,25 +2,20 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { auth } from '@/auth';
 
-interface RouteParams {
-  params: {
-    id: string;
-  };
-}
-
-export async function POST(request: NextRequest, { params }: RouteParams) {
+// 按照 Next.js 15 类型定义
+export async function POST(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     const session = await auth();
 
     // 验证用户是否已登录
     if (!session?.user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const appointmentId = params.id;
+    const appointmentId = (await params).id;
 
     // 获取预约
     const appointment = await prisma.appointment.findUnique({
@@ -35,18 +30,12 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     });
 
     if (!appointment) {
-      return NextResponse.json(
-        { error: 'Appointment not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Appointment not found' }, { status: 404 });
     }
 
     // 验证用户是否有权限更新此预约
     if (appointment.website?.userId !== session.user.id) {
-      return NextResponse.json(
-        { error: 'Forbidden' },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     // 标记为已读

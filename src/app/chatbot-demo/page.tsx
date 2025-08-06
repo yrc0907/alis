@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Chatbot from "@/components/Chatbot";
@@ -18,13 +18,20 @@ export default function ChatbotDemo() {
     position: "bottom-right",
   });
 
-  // 基础嵌入代码
-  const basicEmbedCode = `<script src="${window.location.origin}/chatbot-embed.js" 
-  data-name="${config.botName}"
-  data-message="${config.initialMessage}"
-  data-color="${config.primaryColor}"
-  data-position="${config.position}"
-></script>`;
+  const [embedCode, setEmbedCode] = useState('');
+
+  // 在客户端生成嵌入代码
+  useEffect(() => {
+    // 基础嵌入代码
+    const basicEmbedCode = `<script src="${window.location.origin}/chatbot-embed.js" 
+    data-name="${config.botName}"
+    data-message="${config.initialMessage}"
+    data-color="${config.primaryColor}"
+    data-position="${config.position}"
+  ></script>`;
+
+    setEmbedCode(basicEmbedCode);
+  }, [config]);
 
   // React 组件代码
   const reactComponentCode = `import { Chatbot } from '@your-package/chatbot';
@@ -158,13 +165,13 @@ function YourApp() {
                 <TabsContent value="script">
                   <div className="relative">
                     <SyntaxHighlighter language="html" style={atomDark}>
-                      {basicEmbedCode}
+                      {embedCode}
                     </SyntaxHighlighter>
                     <Button
                       className="absolute top-2 right-2"
                       variant="secondary"
                       size="sm"
-                      onClick={() => navigator.clipboard.writeText(basicEmbedCode)}
+                      onClick={() => navigator.clipboard.writeText(embedCode)}
                     >
                       复制
                     </Button>
