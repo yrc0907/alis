@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Users, Settings, Calendar, BarChart4, ChevronRight, ChevronLeft, PanelLeftClose, PanelLeft } from "lucide-react";
+import { Home, Users, Settings, Calendar, BarChart4, ChevronRight, ChevronLeft, PanelLeftClose, PanelLeft, MessageCircle, Bot, } from "lucide-react";
 import { useSidebar } from "@/context/SidebarContext";
 import { Logo } from "./Logo";
 
@@ -11,6 +11,7 @@ const navItems = [
   { icon: Users, label: "Users", href: "/dashboard/users" },
   { icon: Calendar, label: "Calendar", href: "/dashboard/calendar" },
   { icon: BarChart4, label: "Analytics", href: "/dashboard/analytics" },
+  { icon: Bot, label: "聊天机器人", href: "/dashboard/chatbot" },
   { icon: Settings, label: "Settings", href: "/dashboard/settings" }
 ];
 
