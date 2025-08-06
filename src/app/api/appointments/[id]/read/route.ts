@@ -4,8 +4,8 @@ import { auth } from '@/auth';
 
 // 标记预约为已读
 export async function POST(
-  req: Request,
-  { params }: { params: { id: string } }
+  _req: Request,
+  context: { params: { id: string } }
 ) {
   try {
     const session = await auth();
@@ -18,7 +18,7 @@ export async function POST(
       );
     }
 
-    const appointmentId = params.id;
+    const appointmentId = context.params.id;
 
     // 获取预约
     const appointment = await prisma.appointment.findUnique({
