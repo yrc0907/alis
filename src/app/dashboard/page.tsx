@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { ArrowUpRight, Users, CreditCard, Activity, BarChart, LineChart, Globe, PlusCircle } from "lucide-react";
+import { ArrowUpRight, Users, CreditCard, Activity, BarChart, LineChart, Globe, PlusCircle, Calendar } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -153,8 +153,8 @@ export default function DashboardPage() {
   }, []);
 
   return (
-    // Added px-4 for extra padding on sides at all screen sizes
-    <div className="space-y-6 px-4 sm:px-6 md:px-8">
+    // 调整内边距和间距
+    <div className="space-y-6 p-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
         <p className="text-muted-foreground">Welcome to your dashboard overview.</p>
@@ -170,7 +170,7 @@ export default function DashboardPage() {
       </div>
 
       {isLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 py-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {[1, 2, 3].map(i => (
             <Card className="p-4 h-[140px]" key={i}>
               <div className="animate-pulse flex flex-col h-full">
@@ -188,7 +188,7 @@ export default function DashboardPage() {
           ))}
         </div>
       ) : websites.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 py-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {websites.map((website) => (
             <WebsiteCard key={website.id} website={website} />
           ))}
@@ -204,6 +204,175 @@ export default function DashboardPage() {
           </Button>
         </Card>
       )}
+
+      {/* 最近预约和用户兴趣 */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* 最近预约卡片 */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <div className="space-y-1">
+              <CardTitle>最近预约</CardTitle>
+              <CardDescription>
+                用户通过聊天机器人提交的预约请求
+              </CardDescription>
+            </div>
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="space-y-4">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="animate-pulse flex items-center gap-3">
+                    <div className="h-10 w-10 bg-gray-200 rounded-full"></div>
+                    <div className="flex-1">
+                      <div className="h-4 bg-gray-200 rounded w-3/4 mb-1"></div>
+                      <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                    </div>
+                    <div className="h-8 w-16 bg-gray-200 rounded"></div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {websites.length > 0 ? (
+                  <div className="space-y-4">
+                    {[
+                      { name: '张先生', email: 'zhang@example.com', date: '2023-08-15 14:00', website: '公司官网', status: 'PENDING' },
+                      { name: '李小姐', email: 'li@example.com', date: '2023-08-14 10:30', website: '产品展示页', status: 'CONFIRMED' },
+                      { name: '匿名用户', email: 'anonymous@example.com', date: '2023-08-12 16:15', website: '公司官网', status: 'COMPLETED' }
+                    ].map((appointment, i) => (
+                      <div key={i} className="flex items-center justify-between pb-4 border-b last:border-0 last:pb-0">
+                        <div className="flex items-center gap-3">
+                          <div className={`h-8 w-8 rounded-full flex items-center justify-center text-white ${appointment.status === 'PENDING' ? 'bg-amber-500' :
+                            appointment.status === 'CONFIRMED' ? 'bg-green-500' :
+                              'bg-blue-500'
+                            }`}>
+                            {appointment.name.substring(0, 1)}
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium">{appointment.name}</p>
+                            <p className="text-xs text-muted-foreground">{appointment.date}</p>
+                          </div>
+                        </div>
+                        <Button variant="outline" size="sm">查看</Button>
+                      </div>
+                    ))}
+                    <div className="text-center pt-2">
+                      <Button variant="link" size="sm" className="text-xs">
+                        查看所有预约 →
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <Calendar className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+                    <p className="text-sm text-muted-foreground">暂无预约记录</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* 用户兴趣卡片 */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <div className="space-y-1">
+              <CardTitle>用户兴趣分析</CardTitle>
+              <CardDescription>
+                根据聊天内容分析的用户兴趣
+              </CardDescription>
+            </div>
+            <BarChart className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="animate-pulse space-y-4">
+                <div className="h-4 bg-gray-200 rounded w-full mb-3"></div>
+                <div className="flex items-center gap-2">
+                  <div className="h-5 bg-gray-200 rounded-full w-full"></div>
+                  <div className="h-4 w-12 bg-gray-200 rounded"></div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="h-5 bg-gray-200 rounded-full w-3/4"></div>
+                  <div className="h-4 w-12 bg-gray-200 rounded"></div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="h-5 bg-gray-200 rounded-full w-1/2"></div>
+                  <div className="h-4 w-12 bg-gray-200 rounded"></div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="h-5 bg-gray-200 rounded-full w-1/4"></div>
+                  <div className="h-4 w-12 bg-gray-200 rounded"></div>
+                </div>
+              </div>
+            ) : (
+              <div>
+                {websites.length > 0 ? (
+                  <div className="space-y-4">
+                    <p className="text-sm mb-2">最近30天的用户兴趣分布</p>
+
+                    {/* 产品兴趣 */}
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-xs">
+                        <span>产品信息</span>
+                        <span className="text-muted-foreground">42%</span>
+                      </div>
+                      <div className="h-2 rounded-full bg-gray-100">
+                        <div className="h-2 bg-blue-500 rounded-full" style={{ width: '42%' }}></div>
+                      </div>
+                    </div>
+
+                    {/* 价格兴趣 */}
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-xs">
+                        <span>价格咨询</span>
+                        <span className="text-muted-foreground">28%</span>
+                      </div>
+                      <div className="h-2 rounded-full bg-gray-100">
+                        <div className="h-2 bg-amber-500 rounded-full" style={{ width: '28%' }}></div>
+                      </div>
+                    </div>
+
+                    {/* 预约兴趣 */}
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-xs">
+                        <span>预约需求</span>
+                        <span className="text-muted-foreground">18%</span>
+                      </div>
+                      <div className="h-2 rounded-full bg-gray-100">
+                        <div className="h-2 bg-green-500 rounded-full" style={{ width: '18%' }}></div>
+                      </div>
+                    </div>
+
+                    {/* 联系方式 */}
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-xs">
+                        <span>联系方式</span>
+                        <span className="text-muted-foreground">12%</span>
+                      </div>
+                      <div className="h-2 rounded-full bg-gray-100">
+                        <div className="h-2 bg-purple-500 rounded-full" style={{ width: '12%' }}></div>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 text-center">
+                      <Button variant="link" size="sm" className="text-xs">
+                        查看详细分析 →
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <BarChart className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+                    <p className="text-sm text-muted-foreground">暂无用户兴趣数据</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
       {/* 统计信息 */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

@@ -22,6 +22,7 @@ model User {
   updatedAt     DateTime  @updatedAt
   sessions      Session[]
   websites      Website[] // 用户可以拥有多个网站
+  appointments  Appointment[] // 用户的预约记录
 }
 
 model Session {
@@ -45,6 +46,9 @@ model Website {
   user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   knowledgeItems KnowledgeItem[]   // 网站的知识库条目
   config         KnowledgeConfig?  // 网站的知识库配置
+  chatSessions   ChatSession[]     // 网站的聊天会话
+  appointments   Appointment[]     // 网站的预约记录
+  userInterests  UserInterest[]    // 用户兴趣跟踪
 }
 
 // 知识库条目模型
@@ -68,4 +72,83 @@ model KnowledgeConfig {
   updatedAt DateTime @updatedAt
   websiteId String   @unique        // 一个网站只能有一个配置
   website   Website  @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+}
+
+// 聊天会话模型
+model ChatSession {
+  id          String        @id @default(cuid())
+  sessionId   String        @unique // 客户端会话标识符
+  visitorId   String?       // 访客ID，可能为匿名
+  userId      String?       // 如果用户已登录，关联到用户ID
+  startedAt   DateTime      @default(now())
+  lastActiveAt DateTime      @default(now())
+  websiteId   String        // 所属网站
+  website     Website       @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  messages    ChatMessage[] // 会话中的消息
+  userInterests UserInterest[] // 用户在此会话中表现出的兴趣
+  appointments Appointment[] // 从此会话创建的预约
+}
+
+// 聊天消息模型
+model ChatMessage {
+  id            String      @id @default(cuid())
+  content       String      // 消息内容
+  role          String      // 消息角色：user 或 assistant
+  createdAt     DateTime    @default(now())
+  chatSessionId String      // 所属会话
+  chatSession   ChatSession @relation(fields: [chatSessionId], references: [id], onDelete: Cascade)
+}
+
+// 预约模型
+model Appointment {
+  id            String      @id @default(cuid())
+  name          String?     // 客户姓名
+  email         String      // 客户邮箱
+  phone         String      // 客户电话
+  date          DateTime    // 预约时间
+  notes         String?     // 备注信息
+  subject       String?     // 预约主题
+  duration      Int?        // 预约时长（分钟）
+  status        AppointmentStatus @default(PENDING) // 预约状态
+  isRead        Boolean     @default(false) // 是否已读
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  websiteId     String      // 所属网站
+  website       Website     @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  userId        String?     // 关联用户（如果适用）
+  user          User?       @relation(fields: [userId], references: [id])
+  chatSessionId String?     // 关联的聊天会话
+  chatSession   ChatSession?@relation(fields: [chatSessionId], references: [id])
+}
+
+// 用户兴趣模型
+model UserInterest {
+  id            String      @id @default(cuid())
+  interestType  String      // 兴趣类型：product, service, pricing, etc.
+  interestLevel Float       @default(0) // 兴趣级别：0-1
+  source        String      // 兴趣来源：chat, website_visit, etc.
+  metadata      String?     // 额外元数据，JSON格式
+  createdAt     DateTime    @default(now())
+  websiteId     String      // 所属网站
+  website       Website     @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  chatSessionId String?     // 关联的聊天会话ID，如果适用
+  chatSession   ChatSession? @relation(fields: [chatSessionId], references: [id], onDelete: SetNull)
+}
+
+// 预约状态
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+// 兴趣类型
+enum InterestType {
+  PRODUCT     // 产品兴趣
+  SERVICE     // 服务兴趣
+  PRICING     // 价格兴趣
+  CONTACT     // 联系方式兴趣
+  APPOINTMENT // 预约兴趣
+  GENERAL     // 一般兴趣
 }

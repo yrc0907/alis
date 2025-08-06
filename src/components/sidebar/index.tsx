@@ -1,88 +1,130 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Home, Users, Settings, Calendar, BarChart4, ChevronRight, ChevronLeft, PanelLeftClose, PanelLeft, MessageCircle, Bot, Globe } from "lucide-react";
-import { useSidebar } from "@/context/SidebarContext";
-import { Logo } from "./Logo";
+import { useState, useEffect } from 'react';
+import {
+  Users,
+  BarChart2,
+  Settings,
+  Calendar,
+  LifeBuoy,
+  MessageSquare,
+  Globe,
+  Database,
+  Bell,
+  BarChartHorizontal,
+} from 'lucide-react';
+import { usePathname } from 'next/navigation';
+import { SidebarItem } from './SidebarItem';
+import { Logo } from './Logo';
 
-const navItems = [
-  { icon: Home, label: "主页", href: "/dashboard" },
-  { icon: Bot, label: "聊天机器人", href: "/dashboard/chatbot" },
-  { icon: MessageCircle, label: "知识库管理", href: "/dashboard/knowledge" },
-  { icon: Users, label: "用户管理", href: "/dashboard/users" },
-  { icon: Calendar, label: "日历", href: "/dashboard/calendar" },
-  { icon: BarChart4, label: "分析", href: "/dashboard/analytics" },
-  { icon: Settings, label: "设置", href: "/dashboard/settings" }
+const sidebarItems = [
+  { icon: BarChart2, text: '主页', alert: false, href: '/dashboard' },
+  {
+    icon: Globe,
+    text: '网站管理',
+    alert: false,
+    href: '/dashboard/websites',
+  },
+  {
+    icon: Bell,
+    text: '预约管理',
+    alert: 'appointments', // 特殊标识，用于动态获取数量
+    href: '/dashboard/appointments',
+  },
+  {
+    icon: BarChartHorizontal,
+    text: '兴趣分析',
+    alert: false,
+    href: '/dashboard/interests',
+  },
+  {
+    icon: Database,
+    text: '知识库管理',
+    alert: false,
+    href: '/dashboard/knowledge',
+  },
+  { icon: Users, text: '用户管理', alert: false, href: '/dashboard/users' },
+  { icon: Settings, text: '设置', alert: false, href: '/dashboard/settings' },
 ];
 
-const Sidebar = () => {
+export function Sidebar() {
   const pathname = usePathname();
-  const { isExpanded, toggleSidebar, isMobile } = useSidebar();
+  const [expanded, setExpanded] = useState(true);
+  const [unreadAppointments, setUnreadAppointments] = useState(0);
+
+  // 获取未读预约数量
+  const fetchUnreadCount = async () => {
+    try {
+      const response = await fetch('/api/appointments/unread-count');
+      if (response.ok) {
+        const data = await response.json();
+        setUnreadAppointments(data.unreadCount);
+      }
+    } catch (error) {
+      console.error('Failed to fetch unread appointment count:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchUnreadCount(); // 初始加载
+
+    // 设置定时器轮询，例如每30秒一次
+    const interval = setInterval(fetchUnreadCount, 30000);
+
+    return () => clearInterval(interval); // 组件卸载时清除定时器
+  }, []);
 
   return (
     <aside
-      className={`flex h-full bg-background dark:bg-gray-900 border-r border-border/40 flex-col fixed transition-all duration-300 z-[20] left-0 pt-16 
-        ${isExpanded ? (isMobile ? "w-[240px]" : "w-[200px]") : "w-[60px]"}
-        ${isMobile ? (isExpanded ? "translate-x-0" : "translate-x-[-60px]") : "translate-x-0"}
-        ${isMobile && isExpanded ? "shadow-xl" : ""}`}
+      className={`h-screen transition-all duration-300 ${expanded ? 'w-64' : 'w-20'
+        } bg-white border-r shadow-sm flex flex-col`}
     >
-      <div className="flex flex-col gap-y-4 pt-4 flex-1 overflow-y-auto">
-        {/* Logo and product name */}
-        <div className="px-3 pb-4 mb-2 border-b border-border/40">
-          <Logo showText={isExpanded} />
-        </div>
-
-        <div className="px-2 mb-2">
-          <button
-            onClick={toggleSidebar}
-            className="flex items-center justify-center w-full py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-            aria-label={isExpanded ? "Collapse sidebar" : "Expand sidebar"}
-          >
-            {isExpanded ? (
-              <div className="flex items-center justify-between w-full px-1.5">
-                <span className="text-xs font-medium">Collapse</span>
-                <PanelLeftClose className="h-4 w-4" />
-              </div>
-            ) : (
-              <PanelLeft className="h-4 w-4" />
-            )}
-          </button>
-        </div>
-
-        {navItems.map((item) => {
-          const isActive = pathname === item.href;
-          const Icon = item.icon;
-
-          return (
-            <Link
-              href={item.href}
-              key={item.href}
-              className={`flex items-center gap-x-2 text-sm px-3 py-2.5 transition-all hover:bg-gray-100 dark:hover:bg-gray-800 mx-2 rounded-md ${isActive ? "bg-gray-100 dark:bg-gray-800" : ""
-                }`}
-              onClick={() => isMobile && toggleSidebar()}
-            >
-              <Icon className={`h-5 w-5 min-w-5 ${isActive ? "text-primary" : ""}`} />
-              <span className={`whitespace-nowrap transition-all ${isExpanded ? "opacity-100" : "opacity-0 w-0 overflow-hidden"}`}>
-                {item.label}
-              </span>
-            </Link>
-          );
-        })}
+      <div className="p-4 pb-2 flex justify-between items-center">
+        <Logo showText={expanded} />
+        <button
+          onClick={() => setExpanded((curr) => !curr)}
+          className="p-1.5 rounded-lg bg-gray-50 hover:bg-gray-100"
+        >
+          {expanded ? '<' : '>'}
+        </button>
       </div>
 
-      {/* Mobile Toggle Button */}
-      {isMobile && (
-        <button
-          onClick={toggleSidebar}
-          className={`fixed top-20 ${isExpanded ? "left-[240px]" : "left-0"} z-30 p-2 rounded-r-md bg-background dark:bg-gray-800 border border-l-0 border-border/40 shadow-md transition-all duration-300`}
-          aria-label={isExpanded ? "Collapse sidebar" : "Expand sidebar"}
+      <ul className="flex-1 px-3">
+        {sidebarItems.map((item, index) => {
+          let alertValue = false;
+          if (item.alert === 'appointments') {
+            alertValue = unreadAppointments > 0;
+          } else if (typeof item.alert === 'boolean') {
+            alertValue = item.alert;
+          }
+
+          return (
+            <SidebarItem
+              key={index}
+              icon={<item.icon />}
+              text={item.text}
+              active={pathname === item.href}
+              alert={alertValue}
+              expanded={expanded}
+              href={item.href}
+            />
+          );
+        })}
+      </ul>
+
+      <div className="border-t flex p-3">
+        <div
+          className={`
+              flex justify-between items-center
+              overflow-hidden transition-all ${expanded ? 'w-52 ml-3' : 'w-0'}
+          `}
         >
-          {isExpanded ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-        </button>
-      )}
+          <div className="leading-4">
+            <h4 className="font-semibold">John Doe</h4>
+            <span className="text-xs text-gray-600">johndoe@gmail.com</span>
+          </div>
+        </div>
+      </div>
     </aside>
   );
-};
-
-export default Sidebar;
+}
