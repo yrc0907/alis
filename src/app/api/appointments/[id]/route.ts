@@ -5,7 +5,7 @@ import { auth } from '@/auth';
 // 获取单个预约详情
 export async function GET(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
@@ -18,7 +18,7 @@ export async function GET(
       );
     }
 
-    const appointmentId = params.id;
+    const appointmentId = (await params).id;
 
     // 获取预约详情
     const appointment = await prisma.appointment.findUnique({
@@ -62,10 +62,11 @@ export async function GET(
     }
 
     return NextResponse.json(appointment);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error fetching appointment:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to fetch appointment' },
+      { error: `Failed to fetch appointment: ${errorMessage}` },
       { status: 500 }
     );
   }
@@ -74,7 +75,7 @@ export async function GET(
 // 更新预约信息
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
@@ -87,7 +88,7 @@ export async function PATCH(
       );
     }
 
-    const appointmentId = params.id;
+    const appointmentId = (await params).id;
     const { status, notes } = await req.json();
 
     // 获取预约
@@ -136,10 +137,11 @@ export async function PATCH(
     });
 
     return NextResponse.json(updatedAppointment);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error updating appointment:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to update appointment' },
+      { error: `Failed to update appointment: ${errorMessage}` },
       { status: 500 }
     );
   }
@@ -148,7 +150,7 @@ export async function PATCH(
 // 删除预约
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
@@ -161,7 +163,7 @@ export async function DELETE(
       );
     }
 
-    const appointmentId = params.id;
+    const appointmentId = (await params).id;
 
     // 获取预约
     const appointment = await prisma.appointment.findUnique({
@@ -198,10 +200,11 @@ export async function DELETE(
     return NextResponse.json(
       { message: 'Appointment deleted successfully' }
     );
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error deleting appointment:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to delete appointment' },
+      { error: `Failed to delete appointment: ${errorMessage}` },
       { status: 500 }
     );
   }

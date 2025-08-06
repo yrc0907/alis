@@ -29,10 +29,11 @@ export async function GET() {
     });
 
     return NextResponse.json(websites);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error fetching websites:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to fetch websites' },
+      { error: `Failed to fetch websites: ${errorMessage}` },
       { status: 500 }
     );
   }
@@ -126,14 +127,15 @@ export async function POST(req: Request) {
     } catch (createError) {
       console.error("Failed to create website:", createError);
       return NextResponse.json(
-        { error: `Database error: ${createError.message}` },
+        { error: `Database error: ${(createError as Error).message}` },
         { status: 500 }
       );
     }
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error processing website creation:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: `Internal server error: ${errorMessage}` },
       { status: 500 }
     );
   }

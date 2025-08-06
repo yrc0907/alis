@@ -57,9 +57,9 @@ async function analyzeUserInterest(message: string, websiteId: string, chatSessi
 
       console.log(`Recorded user interest: ${primaryInterest.type} for session ${chatSessionId}`);
     }
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error analyzing user interest:', error);
-    // 不中断聊天流程，即使分析失败
+    // 错误处理 - 只记录日志，不影响主流程
   }
 }
 
@@ -104,7 +104,7 @@ async function queryWebsiteKnowledge(message: string, websiteId: string) {
     // 先检查关键词精确匹配
     for (const item of knowledgeItems) {
       // 关键词是以逗号分隔的字符串，需要转换为数组
-      const keywords = item.keywords.split(',').map(k => k.trim().toLowerCase());
+      const keywords = item.keywords.split(',').map((k: string) => k.trim().toLowerCase());
 
       for (const keyword of keywords) {
         if (normalizedQuestion.includes(keyword)) {
@@ -131,7 +131,7 @@ async function queryWebsiteKnowledge(message: string, websiteId: string) {
 
     // 如果相似度超过阈值，返回最佳匹配
     return bestScore >= config.threshold ? bestMatch : null;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error querying knowledge base:', error);
     return null;
   }
@@ -479,7 +479,7 @@ export async function POST(req: Request) {
           chatSessionId: session.id // 使用会话的id字段，而不是sessionId
         }
       });
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('处理聊天会话或消息时出错:', error);
       throw error; // 重新抛出错误，让外部catch块处理
     }

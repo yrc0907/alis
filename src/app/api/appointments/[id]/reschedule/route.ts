@@ -4,7 +4,7 @@ import { auth } from '@/auth';
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth();
 
@@ -14,7 +14,7 @@ export async function PATCH(
 
   try {
 
-    const { id } = params;
+    const id = (await params).id;
     const { newDateTime } = await req.json();
 
     if (!newDateTime) {
@@ -50,8 +50,9 @@ export async function PATCH(
 
     return NextResponse.json(updatedAppointment);
 
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error rescheduling appointment:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ error: `Internal Server Error: ${errorMessage}` }, { status: 500 });
   }
 } 

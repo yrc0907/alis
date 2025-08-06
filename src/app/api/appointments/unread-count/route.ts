@@ -17,7 +17,7 @@ export async function GET() {
       select: { id: true },
     });
 
-    const websiteIds = userWebsites.map(site => site.id);
+    const websiteIds = userWebsites.map((site: { id: string }) => site.id);
 
     // 如果用户没有任何网站，直接返回0
     if (websiteIds.length === 0) {
@@ -35,8 +35,12 @@ export async function GET() {
     });
 
     return NextResponse.json({ unreadCount });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error fetching unread appointment count:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json(
+      { error: `Internal Server Error: ${errorMessage}` },
+      { status: 500 }
+    );
   }
 } 
