@@ -94,6 +94,19 @@
       justify-content: center;
       font-weight: bold;
     }
+
+    .alert {
+      padding: 10px 15px;
+      background-color: #fee2e2;
+      border-left: 4px solid #ef4444;
+      border-radius: 4px;
+      margin: 20px 0;
+    }
+
+    .alert p {
+      margin: 0;
+      color: #991b1b;
+    }
   </style>
 </head>
 
@@ -105,6 +118,10 @@
     </header>
 
     <div class="content">
+      <div class="alert">
+        <p><strong>注意：</strong> 在外部网站使用聊天机器人时，必须指定完整的API URL！</p>
+      </div>
+
       <h2>什么是嵌入式聊天机器人？</h2>
       <p>
         嵌入式聊天机器人是一个可以轻松添加到您网站的交互式聊天界面。
@@ -127,8 +144,10 @@
   data-message="Hi there! How can I help you today?"
   data-color="#fb923c"
   data-position="bottom-right"
+  <strong>data-api-url="https://your-website.com/api/chatbot"</strong>
 &gt;&lt;/script&gt;</pre>
           </div>
+          <p><strong>重要：</strong> 请确保将 <code>data-api-url</code> 设置为您的API端点的完整URL，包括协议和域名。</p>
         </li>
         <li>
           将代码粘贴到您网站的<span class="highlight">&lt;body&gt;</span>标签结束前：
@@ -141,6 +160,7 @@
     data-message="Hi there! How can I help you today?"
     data-color="#fb923c"
     data-position="bottom-right"
+    data-api-url="https://your-website.com/api/chatbot"
   &gt;&lt;/script&gt;
 &lt;/body&gt;</pre>
           </div>
@@ -157,14 +177,20 @@
         <li><strong>data-message</strong>: 初始欢迎消息</li>
         <li><strong>data-color</strong>: 主题颜色（十六进制颜色代码）</li>
         <li><strong>data-position</strong>: 位置（"bottom-right" 或 "bottom-left"）</li>
-        <li><strong>data-api</strong>: 自定义API端点（可选，默认为"/api/chatbot"）</li>
+        <li><strong>data-api-url</strong>: <span class="highlight">完整的API端点URL</span>（必须包含协议和域名）</li>
       </ul>
+
+      <h2>跨域(CORS)支持</h2>
+      <p>
+        如果您在外部网站使用聊天机器人，需要确保您的API服务器配置了适当的跨域资源共享(CORS)头。
+        我们的服务已经配置了CORS支持，但如果您自己托管API服务，请确保添加必要的CORS头。
+      </p>
     </div>
   </div>
 
   <!-- 嵌入聊天机器人 -->
   <script src="chatbot-embed.js" data-name="Corinna AI" data-message="你好！这是一个示例聊天机器人。请尝试发送消息！" data-color="#fb923c"
-    data-position="bottom-right"></script>
+    data-position="bottom-right" data-api-url="http://localhost:3000/api/chatbot"></script>
 </body>
 
 </html>
