@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -52,7 +52,7 @@ export default function WebsiteDetailPage() {
   const websiteId = params?.id as string;
 
   // 获取网站详情
-  const fetchWebsite = async () => {
+  const fetchWebsite = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetch(`/api/websites/${websiteId}`);
@@ -77,7 +77,7 @@ export default function WebsiteDetailPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [websiteId, router]);
 
   // 更新网站信息
   const updateWebsite = async () => {
@@ -105,9 +105,10 @@ export default function WebsiteDetailPage() {
       const updatedWebsite = await response.json();
       setWebsite(updatedWebsite);
       setEditing(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error updating website:", error);
-      setError(error.message);
+      const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+      setError(errorMessage);
     }
   };
 
@@ -137,7 +138,7 @@ export default function WebsiteDetailPage() {
     if (websiteId) {
       fetchWebsite();
     }
-  }, [websiteId]);
+  }, [websiteId, fetchWebsite]);
 
   if (loading) {
     return (

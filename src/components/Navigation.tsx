@@ -10,7 +10,7 @@ import { signOut } from "next-auth/react";
 export default function Navigation() {
   const pathname = usePathname();
   // Call useSession at the top level always
-  const { data: session, status } = useSession();
+  const { status } = useSession();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
