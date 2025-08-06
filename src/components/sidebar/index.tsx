@@ -12,6 +12,7 @@ const navItems = [
   { icon: Calendar, label: "Calendar", href: "/dashboard/calendar" },
   { icon: BarChart4, label: "Analytics", href: "/dashboard/analytics" },
   { icon: Bot, label: "聊天机器人", href: "/dashboard/chatbot" },
+  { icon: MessageCircle, label: "知识库管理", href: "/dashboard/knowledge" },
   { icon: Settings, label: "Settings", href: "/dashboard/settings" }
 ];
 
