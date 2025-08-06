@@ -46,7 +46,7 @@ export async function GET(req: Request) {
       });
 
       whereCondition.websiteId = {
-        in: userWebsites.map(site => site.id)
+        in: userWebsites.map((site: { id: string }) => site.id)
       };
     }
 
@@ -134,7 +134,7 @@ export async function GET(req: Request) {
         avgInterestLevel: avgInterestLevel._avg.interestLevel || 0,
         conversionRate
       },
-      interestsByType: interestsByType.map(item => ({
+      interestsByType: interestsByType.map((item: { interestType: string, _count: { interestType: number } }) => ({
         type: item.interestType,
         count: item._count.interestType
       })),
@@ -142,10 +142,11 @@ export async function GET(req: Request) {
     };
 
     return NextResponse.json(response);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error fetching user interests:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to fetch user interests' },
+      { error: `Failed to fetch user interests: ${errorMessage}` },
       { status: 500 }
     );
   }

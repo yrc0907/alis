@@ -50,8 +50,9 @@ export async function PATCH(
 
     return NextResponse.json(updatedAppointment);
 
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error rescheduling appointment:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ error: `Internal Server Error: ${errorMessage}` }, { status: 500 });
   }
 } 

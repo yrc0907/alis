@@ -8,10 +8,11 @@ export async function GET() {
   try {
     const items = loadKnowledgeBase();
     return NextResponse.json(items);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error loading knowledge base:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to load knowledge base' },
+      { error: `Failed to load knowledge base: ${errorMessage}` },
       { status: 500 }
     );
   }
@@ -33,10 +34,11 @@ export async function POST(req: Request) {
     // 添加新知识条目
     const newItem = addKnowledgeItem({ question, keywords, answer });
     return NextResponse.json(newItem);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error adding knowledge item:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to add knowledge item' },
+      { error: `Failed to add knowledge item: ${errorMessage}` },
       { status: 500 }
     );
   }

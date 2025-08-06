@@ -47,10 +47,11 @@ export async function GET(
     });
 
     return NextResponse.json(knowledgeItems);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error fetching knowledge items:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to fetch knowledge items' },
+      { error: `Failed to fetch knowledge items: ${errorMessage}` },
       { status: 500 }
     );
   }
@@ -118,10 +119,11 @@ export async function POST(
     });
 
     return NextResponse.json(newItem, { status: 201 });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error creating knowledge item:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to create knowledge item' },
+      { error: `Failed to create knowledge item: ${errorMessage}` },
       { status: 500 }
     );
   }

@@ -29,10 +29,11 @@ export async function PUT(
     }
 
     return NextResponse.json(updatedItem);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error updating knowledge item:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to update knowledge item' },
+      { error: `Failed to update knowledge item: ${errorMessage}` },
       { status: 500 }
     );
   }
@@ -54,10 +55,11 @@ export async function DELETE(
     }
 
     return NextResponse.json({ success: true });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error deleting knowledge item:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to delete knowledge item' },
+      { error: `Failed to delete knowledge item: ${errorMessage}` },
       { status: 500 }
     );
   }

@@ -38,8 +38,9 @@ export async function POST() {
     });
 
     return NextResponse.json({ success: true, count: updateResult.count });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error marking appointments as read:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ error: `Internal Server Error: ${errorMessage}` }, { status: 500 });
   }
 } 

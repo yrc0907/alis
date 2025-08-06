@@ -62,10 +62,11 @@ export async function GET(
     }
 
     return NextResponse.json(appointment);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error fetching appointment:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to fetch appointment' },
+      { error: `Failed to fetch appointment: ${errorMessage}` },
       { status: 500 }
     );
   }
@@ -136,10 +137,11 @@ export async function PATCH(
     });
 
     return NextResponse.json(updatedAppointment);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error updating appointment:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to update appointment' },
+      { error: `Failed to update appointment: ${errorMessage}` },
       { status: 500 }
     );
   }
@@ -198,10 +200,11 @@ export async function DELETE(
     return NextResponse.json(
       { message: 'Appointment deleted successfully' }
     );
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error deleting appointment:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to delete appointment' },
+      { error: `Failed to delete appointment: ${errorMessage}` },
       { status: 500 }
     );
   }

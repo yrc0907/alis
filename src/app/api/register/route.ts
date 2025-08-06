@@ -59,10 +59,11 @@ export async function POST(request: Request) {
       { user: userWithoutPassword },
       { status: 201 }
     );
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Registration error:", error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: "An error occurred during registration" },
+      { error: `An error occurred during registration: ${errorMessage}` },
       { status: 500 }
     );
   }

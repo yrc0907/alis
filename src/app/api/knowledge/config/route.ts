@@ -5,10 +5,11 @@ export async function GET() {
   try {
     const config = loadKnowledgeConfig();
     return NextResponse.json(config);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error loading knowledge config:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to load knowledge config' },
+      { error: `Failed to load knowledge config: ${errorMessage}` },
       { status: 500 }
     );
   }
@@ -38,10 +39,11 @@ export async function POST(req: Request) {
     // 保存配置
     const config = saveKnowledgeConfig({ enabled, threshold });
     return NextResponse.json(config);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error saving knowledge config:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to save knowledge config' },
+      { error: `Failed to save knowledge config: ${errorMessage}` },
       { status: 500 }
     );
   }

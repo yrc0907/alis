@@ -45,7 +45,7 @@ export async function GET() {
       }
     });
 
-    const websiteIds = websites.map(site => site.id);
+    const websiteIds = websites.map((site: { id: string }) => site.id);
 
     const appointments = await prisma.appointment.findMany({
       where: {
@@ -74,10 +74,11 @@ export async function GET() {
     });
 
     return NextResponse.json(appointments, { headers: corsHeaders() });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error fetching appointments:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to fetch appointments' },
+      { error: `Failed to fetch appointments: ${errorMessage}` },
       { status: 500, headers: corsHeaders() }
     );
   }

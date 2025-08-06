@@ -48,10 +48,11 @@ export async function POST(
     });
 
     return NextResponse.json(updatedAppointment);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error marking appointment as read:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to mark appointment as read' },
+      { error: `Failed to mark appointment as read: ${errorMessage}` },
       { status: 500 }
     );
   }

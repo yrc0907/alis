@@ -40,10 +40,11 @@ export async function GET(
     }
 
     return NextResponse.json(website);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error fetching website:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to fetch website' },
+      { error: `Failed to fetch website: ${errorMessage}` },
       { status: 500 }
     );
   }
@@ -123,10 +124,11 @@ export async function PUT(
     });
 
     return NextResponse.json(updatedWebsite);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error updating website:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to update website' },
+      { error: `Failed to update website: ${errorMessage}` },
       { status: 500 }
     );
   }
@@ -172,10 +174,11 @@ export async function DELETE(
     });
 
     return NextResponse.json({ success: true });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error deleting website:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to delete website' },
+      { error: `Failed to delete website: ${errorMessage}` },
       { status: 500 }
     );
   }

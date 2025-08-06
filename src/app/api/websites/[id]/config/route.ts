@@ -51,10 +51,11 @@ export async function GET(
     }
 
     return NextResponse.json(config);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error fetching knowledge config:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to fetch knowledge config' },
+      { error: `Failed to fetch knowledge config: ${errorMessage}` },
       { status: 500 }
     );
   }
@@ -130,10 +131,11 @@ export async function POST(
       });
 
     return NextResponse.json(config);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error updating knowledge config:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to update knowledge config' },
+      { error: `Failed to update knowledge config: ${errorMessage}` },
       { status: 500 }
     );
   }
