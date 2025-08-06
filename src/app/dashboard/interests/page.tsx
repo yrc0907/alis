@@ -49,6 +49,11 @@ import {
 } from "recharts";
 import { BarChart2, PieChart as PieChartIcon, LineChart as LineChartIcon, Users, Search, Activity } from "lucide-react";
 
+interface Website {
+  id: string;
+  name: string;
+}
+
 // 兴趣类型颜色映射
 const interestColors = {
   PRODUCT: "#3b82f6", // blue
@@ -59,8 +64,10 @@ const interestColors = {
   GENERAL: "#6b7280", // gray
 };
 
+type InterestType = keyof typeof interestColors;
+
 // 兴趣类型中文翻译
-const interestTranslations = {
+const interestTranslations: Record<InterestType, string> = {
   PRODUCT: "产品信息",
   SERVICE: "服务咨询",
   PRICING: "价格咨询",
@@ -77,6 +84,8 @@ const sourceTranslations = {
   REFERRAL: "推荐来源",
   DIRECT: "直接访问",
 };
+
+type SourceType = keyof typeof sourceTranslations;
 
 // 示例数据 - 日期范围内各类型兴趣数量
 const interestTypeData = [
@@ -99,8 +108,18 @@ const dailyInterestData = Array.from({ length: 30 }, (_, i) => {
   };
 });
 
+interface RecentInterest {
+  id: string;
+  type: InterestType;
+  level: number;
+  source: SourceType;
+  timestamp: string;
+  user: string;
+  website: string;
+}
+
 // 示例数据 - 最近兴趣点击
-const recentInterestData = [
+const recentInterestData: RecentInterest[] = [
   {
     id: '1',
     type: 'PRODUCT',
@@ -149,7 +168,7 @@ const recentInterestData = [
 ];
 
 export default function InterestsPage() {
-  const [websites, setWebsites] = useState([]);
+  const [websites, setWebsites] = useState<Website[]>([]);
   const [selectedWebsite, setSelectedWebsite] = useState("all");
   const [selectedTimeRange, setSelectedTimeRange] = useState("30");
   const [isLoading, setIsLoading] = useState(true);
@@ -314,7 +333,7 @@ export default function InterestsPage() {
                         fill="#8884d8"
                         paddingAngle={2}
                         dataKey="value"
-                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                        label={({ name, percent }) => `${name}: ${((percent || 0) * 100).toFixed(0)}%`}
                       >
                         {interestTypeData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.color} />
