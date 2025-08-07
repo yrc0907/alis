@@ -2,11 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { auth } from '@/auth';
 
+type PostContext = {
+  params: {
+    id: string;
+  };
+};
+
 // 按照 Next.js 15 类型定义
-export async function POST(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(req: NextRequest, context: PostContext) {
   try {
     const session = await auth();
 
@@ -15,8 +18,7 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    console.log(req);
-    const appointmentId = (await params).id;
+    const { id: appointmentId } = context.params;
 
     // 获取预约
     const appointment = await prisma.appointment.findUnique({
