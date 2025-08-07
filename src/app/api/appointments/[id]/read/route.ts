@@ -15,6 +15,7 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    console.log(req);
     const appointmentId = (await params).id;
 
     // 获取预约
