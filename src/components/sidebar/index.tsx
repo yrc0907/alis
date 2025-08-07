@@ -9,6 +9,7 @@ import {
   Database,
   Bell,
   BarChartHorizontal,
+  MessageCircle,
 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { SidebarItem } from './SidebarItem';
@@ -27,6 +28,12 @@ const sidebarItems = [
     text: '预约管理',
     alert: 'appointments', // 特殊标识，用于动态获取数量
     href: '/dashboard/appointments',
+  },
+  {
+    icon: MessageCircle,
+    text: '用户聊天',
+    alert: 'chats', // 特殊标识，用于动态获取未读聊天数量
+    href: '/dashboard/chats',
   },
   {
     icon: BarChartHorizontal,
@@ -48,6 +55,7 @@ export function Sidebar() {
   const pathname = usePathname();
   const [expanded, setExpanded] = useState(true);
   const [unreadAppointments, setUnreadAppointments] = useState(0);
+  const [unreadChats, setUnreadChats] = useState(0);
 
   // 获取未读预约数量
   const fetchUnreadCount = async () => {
@@ -62,13 +70,31 @@ export function Sidebar() {
     }
   };
 
+  // 获取未读聊天数量
+  const fetchUnreadChats = async () => {
+    try {
+      const response = await fetch('/api/chats/unread-count');
+      if (response.ok) {
+        const data = await response.json();
+        setUnreadChats(data.unreadCount);
+      }
+    } catch (error) {
+      console.error('Failed to fetch unread chat count:', error);
+    }
+  };
+
   useEffect(() => {
     fetchUnreadCount(); // 初始加载
+    fetchUnreadChats(); // 加载未读聊天数
 
     // 设置定时器轮询，例如每30秒一次
-    const interval = setInterval(fetchUnreadCount, 30000);
+    const appointmentInterval = setInterval(fetchUnreadCount, 30000);
+    const chatInterval = setInterval(fetchUnreadChats, 30000);
 
-    return () => clearInterval(interval); // 组件卸载时清除定时器
+    return () => {
+      clearInterval(appointmentInterval); // 组件卸载时清除定时器
+      clearInterval(chatInterval);
+    }
   }, []);
 
   return (
@@ -91,6 +117,8 @@ export function Sidebar() {
           let alertValue = false;
           if (item.alert === 'appointments') {
             alertValue = unreadAppointments > 0;
+          } else if (item.alert === 'chats') {
+            alertValue = unreadChats > 0;
           } else if (typeof item.alert === 'boolean') {
             alertValue = item.alert;
           }
@@ -100,7 +128,7 @@ export function Sidebar() {
               key={index}
               icon={<item.icon />}
               text={item.text}
-              active={pathname === item.href}
+              active={pathname === item.href || pathname.startsWith(item.href + '/')}
               alert={alertValue}
               expanded={expanded}
               href={item.href}
