@@ -17,12 +17,7 @@ import { Logo } from './Logo';
 
 const sidebarItems = [
   { icon: BarChart2, text: '主页', alert: false, href: '/dashboard' },
-  {
-    icon: Globe,
-    text: '网站管理',
-    alert: false,
-    href: '/dashboard/websites',
-  },
+
   {
     icon: Bell,
     text: '预约管理',
@@ -47,7 +42,7 @@ const sidebarItems = [
     alert: false,
     href: '/dashboard/knowledge',
   },
-  { icon: Users, text: '用户管理', alert: false, href: '/dashboard/users' },
+  { icon: Users, text: '潜在用户', alert: false, href: '/dashboard/potential-users' },
   { icon: Settings, text: '设置', alert: false, href: '/dashboard/settings' },
 ];
 

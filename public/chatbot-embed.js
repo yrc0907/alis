@@ -3,6 +3,8 @@
 
   // 配置选项
   const script = document.currentScript;
+  console.log('[Alis Chatbot] Loading with data-attributes:', script.dataset);
+
   const config = {
     botName: script.getAttribute('data-name') || 'Corinna AI',
     initialMessage: script.getAttribute('data-message') || 'Hi there! How can I help you today?',
@@ -13,6 +15,8 @@
     // 网站特定配置
     websiteId: script.getAttribute('data-website-id'),
     apiKey: script.getAttribute('data-api-key'),
+    // 新增：从data属性获取头像URL
+    avatarUrl: script.getAttribute('data-avatar-url'),
     // 提取脚本的来源域名，用于构建API URL
     scriptOrigin: (function () {
       // 获取脚本的src属性
@@ -26,6 +30,7 @@
       }
     })()
   };
+  console.log('[Alis Chatbot] Parsed avatarUrl:', config.avatarUrl);
 
   // 确定API端点的完整URL
   const apiEndpoint = config.apiUrl || `${config.scriptOrigin}/api/website-chatbot`;
@@ -62,10 +67,9 @@
       pointer-events: auto;
     }
     
-    /* 预约按钮样式 */
     .alis-chat-btn {
-      width: 60px;
-      height: 60px;
+      width: 56px; /* 调整大小以匹配预览 */
+      height: 56px;
       border-radius: 50%;
       background-color: ${config.primaryColor};
       color: white;
@@ -85,7 +89,7 @@
     }
     
     .alis-chat-btn:hover {
-      transform: scale(1.05);
+      transform: scale(1.1); /* 调整悬浮效果 */
     }
     
     /* 确保按钮在点击前可见 */
@@ -102,9 +106,10 @@
     
     /* 聊天窗口样式 */
     .alis-chat-window {
-      width: 350px;
-      height: 500px;
-      border-radius: 10px;
+      width: 320px; /* 调整宽度以匹配预览 */
+      height: auto; /* 高度自适应 */
+      max-height: 500px;
+      border-radius: 16px; /* 调整圆角以匹配预览 */
       background-color: white;
       box-shadow: 0 5px 25px rgba(0, 0, 0, 0.2);
       overflow: hidden;
@@ -112,20 +117,57 @@
       flex-direction: column;
       margin-bottom: 15px;
       display: none;
+      transform-origin: bottom ${config.position === 'bottom-left' ? 'left' : 'right'};
+      transition: opacity 0.3s, transform 0.3s;
+    }
+
+    .alis-chat-window.open {
+      display: flex;
+      opacity: 1;
+      transform: scale(1);
     }
     
     .alis-chat-header {
-      padding: 15px;
+      padding: 16px; /* 调整内边距 */
       background-color: ${config.primaryColor};
       color: white;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      flex-shrink: 0;
+    }
+
+    .alis-header-content {
+      display: flex;
+      align-items: center;
+    }
+
+    .alis-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      margin-right: 12px;
+      background-color: rgba(255, 255, 255, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden; /* 确保图片不超出圆形 */
+    }
+
+    .alis-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .alis-avatar-placeholder svg {
+       width: 16px;
+       height: 16px;
     }
     
     .alis-chat-title {
       margin: 0;
-      font-size: 16px;
+      font-size: 14px; /* 调整字体大小 */
       font-weight: 500;
     }
     
@@ -173,15 +215,46 @@
     
     .alis-chat-messages {
       flex: 1;
-      padding: 15px;
+      padding: 16px; /* 调整内边距 */
       overflow-y: auto;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 12px; /* 调整消息间距 */
+      background-color: #f9fafb; /* 添加背景色 */
     }
     
-    .alis-message {
-      max-width: 80%;
+    .alis-message-wrapper {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      max-width: 90%;
+    }
+
+    .alis-message-wrapper.user {
+        justify-content: flex-end;
+        align-self: flex-end;
+    }
+
+    .alis-message-wrapper.bot {
+        justify-content: flex-start;
+        align-self: flex-start;
+    }
+
+    .alis-message-wrapper .alis-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        overflow: hidden;
+    }
+
+    .alis-message-wrapper .alis-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .alis-message-bubble {
       padding: 10px 14px;
       border-radius: 18px;
       word-break: break-word;
@@ -190,45 +263,74 @@
       font-size: 14px;
     }
     
-    .alis-message-user {
+    .alis-message-bubble.user {
       background-color: ${config.primaryColor};
       color: white;
-      align-self: flex-end;
       border-bottom-right-radius: 5px;
     }
     
-    .alis-message-bot {
-      background-color: #f0f0f0;
+    .alis-message-bubble.bot {
+      background-color: #ffffff;
       color: #333;
-      align-self: flex-start;
       border-bottom-left-radius: 5px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+
+    .alis-message-content {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .alis-message-text {
+      /* 文本样式已在 .alis-message 中定义 */
+    }
+
+    .alis-message-time {
+      font-size: 10px;
+      color: #9ca3af;
+      margin-top: 4px;
+      text-align: right;
+    }
+
+    .alis-message-bubble.user .alis-message-time {
+      color: rgba(255,255,255,0.7);
     }
     
     .alis-chat-input {
-      padding: 12px 15px;
+      padding: 12px; /* 调整内边距 */
       border-top: 1px solid #eee;
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px; /* 调整间距 */
+      background-color: #ffffff;
+    }
+    
+    .alis-chat-input-wrapper {
+      position: relative;
+      flex: 1;
+      display: flex;
+      align-items: center;
+      background-color: #f3f4f6;
+      border-radius: 9999px;
     }
     
     .alis-chat-input input {
       flex: 1;
-      padding: 10px 12px;
-      border: 1px solid #ddd;
+      padding: 10px 16px; /* 调整内边距 */
+      border: none; /* 移除边框 */
       border-radius: 20px;
       font-size: 14px;
       outline: none;
+      background-color: transparent; /* 背景透明 */
     }
     
     .alis-chat-input input:focus {
-      border-color: ${config.primaryColor};
-      box-shadow: 0 0 0 1px ${config.primaryColor}25;
+      /* 无需特殊效果，因为wrapper处理了 */
     }
     
     .alis-chat-send {
-      width: 36px;
-      height: 36px;
+      width: 32px; /* 调整大小 */
+      height: 32px;
       border-radius: 50%;
       background-color: ${config.primaryColor};
       color: white;
@@ -238,11 +340,13 @@
       justify-content: center;
       cursor: pointer;
       padding: 0;
+      position: absolute; /* 定位到输入框内 */
+      right: 4px;
     }
     
     .alis-chat-send svg {
-      width: 18px;
-      height: 18px;
+      width: 16px; /* 调整图标大小 */
+      height: 16px;
     }
     
     .alis-chat-send:hover {
@@ -461,7 +565,7 @@
       // 添加聊天窗口
       chatWindow = document.createElement('div');
       chatWindow.className = 'alis-chat-window';
-      chatWindow.innerHTML = chatWindowHTML;
+      chatWindow.innerHTML = createChatWindowHTML(); // 使用新函数
       container.appendChild(chatWindow);
       console.log('Chat window created and added to container');
 
@@ -976,19 +1080,60 @@
 
   // 创建消息元素
   function createMessageElement(text, sender, id) {
-    const messageElement = document.createElement('div');
-    messageElement.className = `alis-message alis-message-${sender}`;
+    // 1. 创建主包装器 (flex容器)
+    const wrapper = document.createElement('div');
+    wrapper.className = `alis-message-wrapper ${sender}`; // 例如: 'alis-message-wrapper bot'
     if (id) {
-      messageElement.id = id;
+        wrapper.id = id;
     }
-    messageElement.innerHTML = text;
-    return messageElement;
+
+    // 2. 创建消息气泡
+    const bubble = document.createElement('div');
+    bubble.className = `alis-message-bubble ${sender}`; // 例如: 'alis-message-bubble bot'
+
+    // 3. 创建内部内容 (文本 + 时间)
+    const contentWrapper = document.createElement('div');
+    contentWrapper.className = 'alis-message-content';
+    contentWrapper.innerHTML = `
+        <div class="alis-message-text">${text}</div>
+        <div class="alis-message-time">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+    `;
+    bubble.appendChild(contentWrapper);
+
+    // 4. 为机器人消息创建头像
+    if (sender === 'bot') {
+        const avatar = document.createElement('div');
+        avatar.className = 'alis-avatar';
+        avatar.innerHTML = config.avatarUrl
+            ? `<img src="${config.avatarUrl}" alt="Avatar">`
+            : `<div class="alis-avatar-placeholder">
+                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                 </div>`;
+        wrapper.appendChild(avatar); // 将头像添加到包装器
+        wrapper.appendChild(bubble); // 将气泡添加到包装器
+    } else {
+        // 对于用户消息，气泡是包装器的唯一子元素
+        wrapper.appendChild(bubble);
+    }
+
+    return wrapper;
   }
 
   // 修改聊天窗口HTML，添加加载指示器样式
-  const chatWindowHTML = `
+  function createChatWindowHTML() {
+    return `
     <div class="alis-chat-header">
-      <h3 class="alis-chat-title">${config.botName}</h3>
+       <div class="alis-header-content">
+         <div class="alis-avatar">
+         ${config.avatarUrl
+        ? `<img src="${config.avatarUrl}" alt="Avatar">`
+        : `<div class="alis-avatar-placeholder">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                </div>`
+      }
+         </div>
+         <h3 class="alis-chat-title">${config.botName}</h3>
+       </div>
       <div class="alis-chat-controls">
         <button class="alis-customer-service-btn" aria-label="人工客服">
           <svg class="alis-customer-service-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -1011,14 +1156,15 @@
     </div>
     <div class="alis-chat-messages"></div>
     <div class="alis-chat-input">
-      <input type="text" class="alis-chat-input-field" placeholder="输入消息..." aria-label="输入消息">
-      <button class="alis-chat-send" aria-label="发送">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M15 8L1 15L3 8L1 1L15 8Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </button>
+      <div class="alis-chat-input-wrapper">
+        <input type="text" class="alis-chat-input-field" placeholder="输入消息..." aria-label="输入消息">
+        <button class="alis-chat-send" aria-label="发送">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+        </button>
+      </div>
     </div>
   `;
+  }
 
   // 添加打字动画样式
   style.textContent += `

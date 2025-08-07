@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { auth } from '@/auth';
+import { Prisma } from '@prisma/client';
 
 interface Interest {
   userId: string | null;
@@ -89,19 +90,28 @@ export async function GET(req: Request) {
     });
 
     // 统计每日兴趣数量
+    const websiteFilter =
+      websiteId && websiteId !== 'all'
+        ? Prisma.sql`AND "websiteId" = ${websiteId}`
+        : Prisma.sql`AND "websiteId" IN (SELECT "id" FROM "Website" WHERE "userId" = ${userId})`;
+
     const dailyInterests = await prisma.$queryRaw`
-      SELECT 
-        DATE(createdAt) as date,
-        interestType,
-        COUNT(*) as count
-      FROM UserInterest
-      WHERE createdAt >= ${startDate} AND createdAt <= ${endDate}
-      ${websiteId && websiteId !== 'all'
-        ? prisma.$queryRaw`AND websiteId = ${websiteId}`
-        : prisma.$queryRaw`AND websiteId IN (SELECT id FROM Website WHERE userId = ${userId})`}
-      GROUP BY DATE(createdAt), interestType
-      ORDER BY DATE(createdAt)
+      SELECT
+        DATE("createdAt") as "date",
+        "interestType",
+        COUNT(*) as "count"
+      FROM "UserInterest"
+      WHERE "createdAt" >= ${startDate} AND "createdAt" <= ${endDate}
+      ${websiteFilter}
+      GROUP BY DATE("createdAt"), "interestType"
+      ORDER BY DATE("createdAt")
     `;
+
+    // Manually convert BigInt to Number for serialization
+    const processedDailyInterests = (dailyInterests as any[]).map(item => ({
+      ...item,
+      count: Number(item.count),
+    }));
 
     // 计算平均兴趣级别
     const avgInterestLevel = await prisma.userInterest.aggregate({
@@ -146,7 +156,7 @@ export async function GET(req: Request) {
         type: item.interestType,
         count: item._count.interestType
       })),
-      dailyInterests
+      dailyInterests: processedDailyInterests
     };
 
     return NextResponse.json(response);
