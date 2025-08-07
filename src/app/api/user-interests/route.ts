@@ -2,6 +2,15 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { auth } from '@/auth';
 
+interface Interest {
+  userId: string | null;
+  chatSessionId: string | null;
+  interestType: string;
+  chatSession?: {
+    visitorId: string | null;
+  } | null;
+}
+
 // 获取用户兴趣数据
 export async function GET(req: Request) {
   try {
@@ -107,7 +116,7 @@ export async function GET(req: Request) {
 
     // 计算独立访客数
     const uniqueVisitors = new Set();
-    interests.forEach(interest => {
+    interests.forEach((interest: Interest) => {
       const visitorId = interest.userId ||
         interest.chatSession?.visitorId ||
         `anonymous_${interest.chatSessionId}`;
@@ -117,7 +126,7 @@ export async function GET(req: Request) {
     });
 
     // 计算有效转化率（估算值：预约兴趣占比）
-    const appointmentInterests = interests.filter(interest =>
+    const appointmentInterests = interests.filter((interest: Interest) =>
       interest.interestType === 'APPOINTMENT'
     ).length;
     const conversionRate = totalInterests > 0
