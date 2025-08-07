@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { ArrowUpRight, CreditCard, Activity, BarChart, LineChart, Globe, PlusCircle, Calendar } from "lucide-react";
+import { ArrowUpRight, CreditCard, Activity, BarChart, LineChart, Globe, PlusCircle, Calendar, MessageCircle } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -90,6 +90,7 @@ export default function DashboardPage() {
     description: ""
   });
   const [error, setError] = useState("");
+  const [chatSessions, setChatSessions] = useState<any[]>([]);
   const router = useRouter();
 
   // 获取网站列表
@@ -149,8 +150,25 @@ export default function DashboardPage() {
     }
   };
 
+  // 获取最近的聊天会话
+  const fetchChatSessions = async () => {
+    try {
+      const response = await fetch("/api/chats?limit=4");
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch chat sessions");
+      }
+
+      const data = await response.json();
+      setChatSessions(data);
+    } catch (error) {
+      console.error("Error fetching chat sessions:", error);
+    }
+  };
+
   useEffect(() => {
     fetchWebsites();
+    fetchChatSessions();
   }, []);
 
   return (
@@ -428,18 +446,72 @@ export default function DashboardPage() {
           </div>
         </Card>
 
+        {/* 修改聊天分析卡片内容 */}
         <Card className="p-4">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-medium">聊天分析</h3>
+            <Link href="/dashboard/chats" className="text-xs text-primary hover:underline">
+              查看全部
+            </Link>
           </div>
-          <div className="h-[260px] flex items-center justify-center border rounded-md">
-            <div className="text-center p-6">
-              <LineChart className="h-12 w-12 mx-auto text-primary mb-2" />
-              <h4 className="text-lg font-medium">月度对话量</h4>
-              <p className="text-sm text-muted-foreground mt-1">
-                查看详细的对话数据和知识库使用情况
-              </p>
-            </div>
+          <div className="space-y-3 max-h-[260px] overflow-y-auto">
+            {isLoading ? (
+              <div className="animate-pulse space-y-3">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="flex justify-between items-center p-2 border-b last:border-0">
+                    <div className="flex items-center gap-2">
+                      <div className="h-8 w-8 bg-gray-200 rounded-full"></div>
+                      <div>
+                        <div className="h-4 bg-gray-200 rounded w-24 mb-1"></div>
+                        <div className="h-3 bg-gray-200 rounded w-16"></div>
+                      </div>
+                    </div>
+                    <div className="h-8 bg-gray-200 rounded w-16"></div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <>
+                {websites.length > 0 ? (
+                  <div className="space-y-0">
+                    {chatSessions.length > 0 ? (
+                      chatSessions.map((chat) => (
+                        <Link
+                          href={`/dashboard/chats/${chat.id}`}
+                          key={chat.id}
+                          className="flex items-center justify-between p-2 border-b hover:bg-slate-50 transition-colors"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className={`h-8 w-8 rounded-full flex items-center justify-center text-white ${!chat.isRead ? 'bg-blue-500' : 'bg-gray-400'}`}>
+                              {chat.visitorId ? chat.visitorId.substring(0, 1) : '?'}
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium flex items-center">
+                                {chat.visitorId ? `访客 ${chat.visitorId.substring(0, 6)}` : '匿名访客'}
+                                {!chat.isRead && <span className="ml-2 w-2 h-2 bg-blue-500 rounded-full"></span>}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {chat.websiteName} · {formatTimeAgo(new Date(chat.lastActiveAt))}
+                              </p>
+                            </div>
+                          </div>
+                          <Button variant="outline" size="sm">查看</Button>
+                        </Link>
+                      ))
+                    ) : (
+                      <div className="text-center py-4">
+                        <p className="text-sm text-muted-foreground">暂无最近聊天</p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <MessageCircle className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+                    <p className="text-sm text-muted-foreground">暂无聊天记录</p>
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </Card>
       </div>
@@ -493,3 +565,19 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+// 时间格式化辅助函数
+const formatTimeAgo = (date: Date): string => {
+  const now = new Date();
+  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+  if (diffInSeconds < 60) {
+    return '刚刚';
+  } else if (diffInSeconds < 3600) {
+    return `${Math.floor(diffInSeconds / 60)}分钟前`;
+  } else if (diffInSeconds < 86400) {
+    return `${Math.floor(diffInSeconds / 3600)}小时前`;
+  } else {
+    return `${Math.floor(diffInSeconds / 86400)}天前`;
+  }
+};

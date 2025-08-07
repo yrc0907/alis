@@ -77,17 +77,22 @@ model KnowledgeConfig {
 
 // 聊天会话模型
 model ChatSession {
-  id          String        @id @default(cuid())
-  sessionId   String        @unique // 客户端会话标识符
-  visitorId   String?       // 访客ID，可能为匿名
-  userId      String?       // 如果用户已登录，关联到用户ID
-  startedAt   DateTime      @default(now())
-  lastActiveAt DateTime      @default(now())
-  websiteId   String        // 所属网站
-  website     Website       @relation(fields: [websiteId], references: [id], onDelete: Cascade)
-  messages    ChatMessage[] // 会话中的消息
-  userInterests UserInterest[] // 用户在此会话中表现出的兴趣
-  appointments Appointment[] // 从此会话创建的预约
+  id                String        @id @default(cuid())
+  sessionId         String        @unique // 客户端会话标识符
+  visitorId         String?       // 访客ID，可能为匿名
+  userId            String?       // 如果用户已登录，关联到用户ID
+  startedAt         DateTime      @default(now())
+  lastActiveAt      DateTime      @default(now())
+  websiteId         String        // 所属网站
+  website           Website       @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  messages          ChatMessage[] // 会话中的消息
+  userInterests     UserInterest[] // 用户在此会话中表现出的兴趣
+  appointments      Appointment[] // 从此会话创建的预约
+  needsHumanSupport Boolean       @default(false) // 是否需要人工客服支持
+  isRead            Boolean       @default(true) // 是否已读
+  supportRequestedAt DateTime?    // 请求人工支持的时间
+  lastPageUrl       String?       // 最后访问的页面URL
+  lastUserAgent     String?       // 最后的用户浏览器信息
 }
 
 // 聊天消息模型

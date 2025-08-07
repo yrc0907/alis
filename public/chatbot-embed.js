@@ -30,6 +30,12 @@
   // 确定API端点的完整URL
   const apiEndpoint = config.apiUrl || `${config.scriptOrigin}/api/website-chatbot`;
 
+  // 客服通知API端点
+  const customerServiceEndpoint = `${config.apiUrl ? new URL(config.apiUrl).origin : config.scriptOrigin}/api/customer-service`;
+
+  // WebSocket连接
+  let socket = null;
+
   // 聊天会话ID
   let sessionId = localStorage.getItem('alis_chat_session_id');
   if (!sessionId) {
@@ -53,6 +59,7 @@
       display: flex;
       flex-direction: column;
       transition: all 0.3s;
+      pointer-events: auto;
     }
     
     /* 预约按钮样式 */
@@ -69,10 +76,28 @@
       box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
       transition: all 0.3s;
       align-self: ${config.position === 'bottom-left' ? 'flex-start' : 'flex-end'};
+      border: none;
+      padding: 0;
+      margin: 0;
+      outline: none;
+      position: relative;
+      z-index: 10000;
     }
     
     .alis-chat-btn:hover {
       transform: scale(1.05);
+    }
+    
+    /* 确保按钮在点击前可见 */
+    .alis-chat-btn svg {
+      width: 24px;
+      height: 24px;
+      pointer-events: none;
+    }
+    
+    .alis-chat-btn path {
+      stroke: white;
+      stroke-width: 2px;
     }
     
     /* 聊天窗口样式 */
@@ -118,6 +143,32 @@
       align-items: center;
       justify-content: center;
       padding: 2px;
+    }
+    
+    /* 客服按钮样式 */
+    .alis-customer-service-btn {
+      background-color: rgba(255, 255, 255, 0.2);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 4px 8px;
+      font-size: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-right: 8px;
+      transition: all 0.2s;
+    }
+    
+    .alis-customer-service-btn:hover {
+      background-color: rgba(255, 255, 255, 0.3);
+    }
+    
+    .alis-customer-service-icon {
+      width: 14px;
+      height: 14px;
+      fill: white;
     }
     
     .alis-chat-messages {
@@ -351,122 +402,367 @@
       40% { transform: scale(1); }
     }
   `;
-  document.head.appendChild(style);
+
+  // 确保样式被添加到文档中
+  try {
+    document.head.appendChild(style);
+    console.log('Chatbot styles added to document head');
+  } catch (e) {
+    console.error('Failed to add styles to head:', e);
+    // 备用方案：添加到body
+    document.body && document.body.appendChild(style);
+    console.log('Chatbot styles added to document body as fallback');
+  }
 
   // 初始化聊天窗口
   function initChatbot() {
-    // 创建容器
-    const container = document.createElement('div');
-    container.className = 'alis-chatbot-container';
-    document.body.appendChild(container);
+    try {
+      console.log('Starting chatbot initialization...');
+      // 重置历史加载标记
+      window.alisHistoryLoaded = false;
 
-    // 添加按钮
-    const button = document.createElement('button');
-    button.className = 'alis-chat-btn';
-    button.setAttribute('aria-label', '打开聊天');
-    button.innerHTML = `
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M21 15C21 15.5304 20.7893 16.0391 20.4142 16.4142C20.0391 16.7893 19.5304 17 19 17H7L3 21V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H19C19.5304 3 20.0391 3.21071 20.4142 3.58579C20.7893 3.96086 21 4.46957 21 5V15Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-    `;
-    container.appendChild(button);
-
-    // 添加聊天窗口
-    chatWindow = document.createElement('div');
-    chatWindow.className = 'alis-chat-window';
-    chatWindow.innerHTML = chatWindowHTML;
-    container.appendChild(chatWindow);
-
-    // 获取重要元素
-    chatMessages = chatWindow.querySelector('.alis-chat-messages'); // 设置全局变量
-    const chatInput = chatWindow.querySelector('.alis-chat-input-field');
-    const chatSend = chatWindow.querySelector('.alis-chat-send');
-    const chatMinimize = chatWindow.querySelector('.alis-chat-minimize');
-    const chatClose = chatWindow.querySelector('.alis-chat-close');
-
-    // 添加事件监听
-    button.addEventListener('click', () => {
-      chatWindow.style.display = 'flex';
-      setTimeout(() => {
-        chatWindow.classList.add('open');
-      }, 10);
-      button.style.display = 'none';
-
-      // 检查是否为首次打开
-      const isFirstOpen = localStorage.getItem('alis_chat_first_open') !== 'false';
-      if (isFirstOpen) {
-        // 显示欢迎消息
-        addMessage(config.initialMessage, 'bot');
-        localStorage.setItem('alis_chat_first_open', 'false');
+      // 移除任何现有的聊天机器人容器
+      const existingContainer = document.querySelector('.alis-chatbot-container');
+      if (existingContainer) {
+        existingContainer.remove();
+        console.log('Removed existing chatbot container');
       }
 
-      // 滚动到底部
-      setTimeout(() => {
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-        // 聚焦输入框
-        chatInput.focus();
-      }, 300);
-    });
+      // 创建容器
+      const container = document.createElement('div');
+      container.className = 'alis-chatbot-container';
 
-    chatMinimize.addEventListener('click', () => {
-      chatWindow.classList.remove('open');
-      setTimeout(() => {
-        chatWindow.style.display = 'none';
-        button.style.display = 'flex';
-      }, 300);
-    });
+      // 确保在DOM准备好时添加元素
+      if (document.body) {
+        document.body.appendChild(container);
+        console.log('Chatbot container created and added to DOM');
+      } else {
+        console.error('Body element not found, cannot add chatbot container');
+        // 如果document.body不存在，等待DOM加载完成
+        document.addEventListener('DOMContentLoaded', () => {
+          document.body.appendChild(container);
+          console.log('Chatbot container added after DOM content loaded');
+        });
+        return;
+      }
 
-    chatClose.addEventListener('click', () => {
-      chatWindow.classList.remove('open');
-      setTimeout(() => {
-        chatWindow.style.display = 'none';
-        button.style.display = 'flex';
-      }, 300);
-    });
+      // 添加按钮
+      const button = document.createElement('button');
+      button.className = 'alis-chat-btn';
+      button.setAttribute('aria-label', '打开聊天');
+      button.innerHTML = `
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M21 15C21 15.5304 20.7893 16.0391 20.4142 16.4142C20.0391 16.7893 19.5304 17 19 17H7L3 21V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H19C19.5304 3 20.0391 3.21071 20.4142 3.58579C20.7893 3.96086 21 4.46957 21 5V15Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      `;
+      container.appendChild(button);
+      console.log('Chat button created and added to container');
 
-    // 处理消息发送
-    function handleSendMessage(e) {
-      e.preventDefault();
-      const message = chatInput.value.trim();
-      if (!message) return;
+      // 添加聊天窗口
+      chatWindow = document.createElement('div');
+      chatWindow.className = 'alis-chat-window';
+      chatWindow.innerHTML = chatWindowHTML;
+      container.appendChild(chatWindow);
+      console.log('Chat window created and added to container');
 
-      // 添加用户消息
-      addMessage(message, 'user');
+      // 获取重要元素
+      chatMessages = chatWindow.querySelector('.alis-chat-messages'); // 设置全局变量
+      const chatInput = chatWindow.querySelector('.alis-chat-input-field');
+      const chatSend = chatWindow.querySelector('.alis-chat-send');
+      const chatMinimize = chatWindow.querySelector('.alis-chat-minimize');
+      const chatClose = chatWindow.querySelector('.alis-chat-close');
+      const customerServiceBtn = chatWindow.querySelector('.alis-customer-service-btn');
 
-      // 清空输入
-      chatInput.value = '';
+      // 添加事件监听
+      button.addEventListener('click', () => {
+        chatWindow.style.display = 'flex';
+        setTimeout(() => {
+          chatWindow.classList.add('open');
+        }, 10);
+        button.style.display = 'none';
 
-      // 添加"正在思考"消息
-      const loadingId = 'loading-' + Date.now();
-      addMessage('<div class="alis-typing-indicator"><span></span><span></span><span></span></div>', 'bot', loadingId);
+        // 检查是否为首次打开
+        const isFirstOpen = localStorage.getItem('alis_chat_first_open') !== 'false';
+        if (isFirstOpen) {
+          // 显示欢迎消息
+          addMessage(config.initialMessage, 'bot');
+          localStorage.setItem('alis_chat_first_open', 'false');
+        } else {
+          // 如果不是首次打开，加载历史消息
+          loadChatHistory();
+        }
 
-      // 发送到API
-      sendToAPI(message, loadingId);
+        // 滚动到底部
+        setTimeout(() => {
+          chatMessages.scrollTop = chatMessages.scrollHeight;
+          // 聚焦输入框
+          chatInput.focus();
+        }, 300);
+      });
+
+      // 添加人工客服按钮事件
+      if (customerServiceBtn) {
+        customerServiceBtn.addEventListener('click', () => {
+          // 显示正在连接客服的消息
+          addMessage("正在为您连接人工客服，请稍候...", 'bot');
+
+          // 请求人工客服
+          requestCustomerService("用户点击了人工客服按钮");
+        });
+      } else {
+        console.warn('Customer service button not found in the DOM');
+      }
+
+      chatMinimize.addEventListener('click', () => {
+        chatWindow.classList.remove('open');
+        setTimeout(() => {
+          chatWindow.style.display = 'none';
+          button.style.display = 'flex';
+        }, 300);
+      });
+
+      chatClose.addEventListener('click', () => {
+        chatWindow.classList.remove('open');
+        setTimeout(() => {
+          chatWindow.style.display = 'none';
+          button.style.display = 'flex';
+        }, 300);
+      });
+
+      // 处理消息发送
+      function handleSendMessage(e) {
+        e.preventDefault();
+        const message = chatInput.value.trim();
+        if (!message) return;
+
+        // 添加用户消息
+        addMessage(message, 'user');
+
+        // 清空输入
+        chatInput.value = '';
+
+        // 检查是否用户请求人工客服
+        if (checkForHumanSupportRequest(message)) {
+          // 显示正在连接客服的消息
+          addMessage("正在为您连接人工客服，请稍候...", 'bot');
+
+          // 请求人工客服
+          requestCustomerService("用户消息请求人工客服: " + message);
+          return;
+        }
+
+        // 如果已经在人工客服模式且Socket连接已建立
+        if (socket && socket.connected) {
+          // 通过Socket发送消息
+          socket.emit('chat_message', {
+            chatSessionId: sessionId,
+            sessionId: sessionId,
+            content: message,
+            role: 'user'
+          });
+
+          // 添加"正在等待回复"指示器
+          const loadingId = 'loading-' + Date.now();
+          addMessage('<div class="alis-typing-indicator"><span></span><span></span><span></span></div>', 'bot', loadingId, true, false);
+        } else {
+          // 添加"正在思考"消息
+          const loadingId = 'loading-' + Date.now();
+          addMessage('<div class="alis-typing-indicator"><span></span><span></span><span></span></div>', 'bot', loadingId, true, false); // 不保存到本地
+
+          // 发送到API
+          sendToAPI(message, loadingId);
+        }
+      }
+
+      // 检查是否请求人工客服
+      function checkForHumanSupportRequest(message) {
+        const keywords = [
+          '人工', '客服', '真人', '人工客服', '客服人员',
+          '转人工', '转接人工', '人工服务', '转接客服',
+          '联系客服', '真人客服', '请联系客服', '请转人工',
+          'human', 'agent', 'representative', 'customer service'
+        ];
+
+        const lowerMessage = message.toLowerCase();
+        return keywords.some(keyword => lowerMessage.includes(keyword));
+      }
+
+      chatSend.addEventListener('click', handleSendMessage);
+      chatInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          handleSendMessage(e);
+        }
+      });
+
+      // 显示聊天按钮
+      button.style.display = 'flex';
+      console.log('Chat button display set to flex, should be visible now');
+
+      // 确保聊天按钮在顶层显示
+      container.style.zIndex = '9999';
+      button.style.zIndex = '10000';
+
+      // 强制显示按钮的内联样式
+      button.style.width = '60px';
+      button.style.height = '60px';
+      button.style.borderRadius = '50%';
+      button.style.backgroundColor = config.primaryColor;
+      button.style.color = 'white';
+      button.style.display = 'flex';
+      button.style.alignItems = 'center';
+      button.style.justifyContent = 'center';
+      button.style.position = 'relative';
+      button.style.cursor = 'pointer';
+      button.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.2)';
+
+      console.log('Chatbot initialization complete');
+      return { chatWindow, chatMessages, chatInput };
+    } catch (error) {
+      console.error('Error initializing chatbot:', error);
     }
+  }
 
-    chatSend.addEventListener('click', handleSendMessage);
-    chatInput.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') {
-        handleSendMessage(e);
+  // 修改loadChatHistory函数，确保不会重复显示消息
+  async function loadChatHistory() {
+    try {
+      // 标记，防止重复加载
+      if (window.alisHistoryLoaded) {
+        console.log('历史记录已加载，跳过重复加载');
+        return;
       }
-    });
 
-    // 显示聊天按钮
-    button.style.display = 'flex';
+      // 构建历史消息API端点
+      const historyEndpoint = `${apiEndpoint}/history?sessionId=${sessionId}`;
+      console.log('加载历史消息:', historyEndpoint);
 
-    return { chatWindow, chatMessages, chatInput };
+      // 显示加载指示器
+      const loadingId = 'loading-history-' + Date.now();
+      addMessage('<div class="alis-typing-indicator"><span></span><span></span><span></span></div>', 'bot', loadingId, true, false); // 不保存到本地
+
+      // 获取历史消息
+      const response = await fetch(historyEndpoint, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Origin': window.location.origin
+        },
+        mode: 'cors'
+      });
+
+      // 移除加载指示器
+      const loadingElement = document.getElementById(loadingId);
+      if (loadingElement) {
+        loadingElement.remove();
+      }
+
+      // 清除现有消息
+      chatMessages.innerHTML = '';
+
+      if (response.ok) {
+        // 处理响应
+        const data = await response.json();
+
+        // 显示历史消息
+        if (data.messages && data.messages.length > 0) {
+          console.log(`从服务器加载了 ${data.messages.length} 条历史消息`);
+
+          data.messages.forEach(msg => {
+            addMessage(msg.content, msg.role, null, false, false); // 不滚动到底部，不保存到本地
+          });
+
+          // 全部加载完成后滚动到底部
+          chatMessages.scrollTop = chatMessages.scrollHeight;
+          window.alisHistoryLoaded = true; // 标记历史已加载
+          return; // 成功从服务器加载，不需要使用本地存储
+        }
+      }
+
+      // 如果服务器API请求失败或没有消息，尝试从本地存储加载
+      console.log('尝试从本地存储加载历史消息');
+      loadLocalChatHistory();
+
+    } catch (error) {
+      console.error('从服务器加载历史消息失败:', error);
+      // 尝试从本地存储加载
+      loadLocalChatHistory();
+    }
+  }
+
+  // 从本地存储加载聊天记录的函数
+  function loadLocalChatHistory() {
+    try {
+      // 标记，防止重复加载
+      if (window.alisHistoryLoaded) {
+        console.log('历史记录已加载，跳过本地加载');
+        return;
+      }
+
+      // 从localStorage获取消息
+      const localMessages = JSON.parse(localStorage.getItem(`alis_chat_messages_${sessionId}`) || '[]');
+
+      // 清除现有消息
+      chatMessages.innerHTML = '';
+
+      if (localMessages.length > 0) {
+        console.log(`从本地存储加载了 ${localMessages.length} 条历史消息`);
+
+        // 显示本地存储的历史消息
+        localMessages.forEach(msg => {
+          // 跳过加载指示器消息和内部指令消息
+          if (!msg.content.includes('alis-typing-indicator') && !msg.content.includes('<APPOINTMENT_FORM:')) {
+            addMessage(msg.content, msg.role, null, false, false); // 不滚动到底部，不保存到本地
+          }
+        });
+
+        // 全部加载完成后滚动到底部
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        window.alisHistoryLoaded = true; // 标记历史已加载
+      } else {
+        console.log('本地存储中没有历史消息');
+        // 如果没有历史消息，显示初始欢迎消息
+        addMessage(config.initialMessage, 'bot', null, true, true);
+      }
+    } catch (error) {
+      console.error('从本地存储加载历史消息失败:', error);
+      // 显示初始欢迎消息
+      addMessage(config.initialMessage, 'bot', null, true, true);
+    }
   }
 
   // 添加消息
-  function addMessage(text, sender, id) {
+  function addMessage(text, sender, id, autoScroll = true, saveLocal = true) {
     if (!chatMessages) {
       console.error('聊天消息容器未初始化');
       return;
     }
 
+    // 检查重复消息 (防止消息重复显示)
+    if (id && document.getElementById(id)) {
+      console.log('跳过重复消息ID:', id);
+      return;
+    }
+
+    // 对于系统消息，检查最近5条消息是否有相同内容，避免重复
+    if (sender === 'system') {
+      const messages = chatMessages.querySelectorAll('.alis-message');
+      let lastFiveMessages = [];
+      for (let i = Math.max(0, messages.length - 5); i < messages.length; i++) {
+        lastFiveMessages.push(messages[i].textContent);
+      }
+
+      if (lastFiveMessages.includes(text)) {
+        console.log('跳过重复的系统消息:', text);
+        return;
+      }
+    }
+
     const messageElement = createMessageElement(text, sender, id);
     chatMessages.appendChild(messageElement);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
+
+    // 自动滚动到底部（除非指定不滚动）
+    if (autoScroll) {
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
 
     // 如果是机器人消息，处理特殊指令
     if (sender === 'bot') {
@@ -484,6 +780,41 @@
           renderAppointmentForm(messageElement, websiteId);
         }, 100);
       }
+    }
+
+    // 在本地存储中保存最新消息，以便在页面刷新后显示
+    if (saveLocal) {
+      saveChatMessage(text, sender);
+    }
+  }
+
+  // 修改saveChatMessage函数，确保不保存加载指示器消息
+  function saveChatMessage(text, sender) {
+    try {
+      // 不保存加载指示器消息
+      if (text.includes('alis-typing-indicator')) {
+        return;
+      }
+
+      // 从localStorage获取现有消息
+      let messages = JSON.parse(localStorage.getItem(`alis_chat_messages_${sessionId}`) || '[]');
+
+      // 添加新消息
+      messages.push({
+        content: text,
+        role: sender,
+        timestamp: new Date().toISOString()
+      });
+
+      // 限制存储的消息数量（最多保存最近的50条）
+      if (messages.length > 50) {
+        messages = messages.slice(messages.length - 50);
+      }
+
+      // 保存回localStorage
+      localStorage.setItem(`alis_chat_messages_${sessionId}`, JSON.stringify(messages));
+    } catch (error) {
+      console.error('保存消息到本地存储失败:', error);
     }
   }
 
@@ -659,6 +990,12 @@
     <div class="alis-chat-header">
       <h3 class="alis-chat-title">${config.botName}</h3>
       <div class="alis-chat-controls">
+        <button class="alis-customer-service-btn" aria-label="人工客服">
+          <svg class="alis-customer-service-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M20 10V8A8 8 0 0 0 4 8v2a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h2v-9a6 6 0 1 1 12 0v9h2a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2zM9 21h6v-2H9v2z"/>
+          </svg>
+          人工客服
+        </button>
         <button class="alis-chat-control alis-chat-minimize" aria-label="最小化">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M4 8H12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -886,6 +1223,7 @@
         }),
       });
 
+      // 先移除加载提示
       const loadingMsg = document.getElementById(loadingId);
       if (loadingMsg) loadingMsg.remove();
 
@@ -960,6 +1298,11 @@
             }
           }
         }
+
+        // 流式响应结束后，保存完整消息
+        if (streamText.trim()) {
+          saveChatMessage(streamText, 'bot');
+        }
       } else {
         // 回退处理
         console.warn('Received unknown content type:', contentType);
@@ -968,9 +1311,105 @@
       }
     } catch (error) {
       console.error('API request failed:', error);
-      const loadingMsg = document.getElementById('loading-indicator');
+      // 确保先移除加载指示器
+      const loadingMsg = document.getElementById(loadingId);
       if (loadingMsg) loadingMsg.remove();
+
       addMessage('抱歉，请求失败。请检查您的网络连接并重试。', 'bot');
+    }
+  }
+
+  // 请求人工客服功能
+  async function requestCustomerService(reason) {
+    try {
+      console.log(`Requesting customer service...`);
+
+      // 显示等待消息
+      addMessage('已发送人工客服请求，正在连接客服人员...', 'bot');
+
+      // 优先尝试通过Socket.IO发送请求
+      try {
+        // 确保socket已连接
+        if (!socket || !socket.connected) {
+          console.log('Socket not connected, initializing connection...');
+          await new Promise((resolve, reject) => {
+            initSocketConnection();
+
+            // 等待连接成功或失败
+            socket.once('connect', resolve);
+            socket.once('connect_error', reject);
+            socket.once('reconnect_failed', reject);
+
+            // 设置超时
+            setTimeout(() => reject(new Error('Socket connection timed out')), 10000);
+          });
+        }
+
+        console.log('Socket is connected, sending request via Socket.IO');
+        socket.emit('customer_service_request', {
+          sessionId: sessionId,
+          reason: reason,
+          websiteId: config.websiteId
+        });
+
+        // 等待服务器确认
+        await new Promise((resolve, reject) => {
+          socket.once('customer_service_requested', (data) => {
+            if (data.success) {
+              console.log('Successfully requested customer service via Socket.IO');
+              resolve();
+            } else {
+              reject(new Error(data.message || 'Server rejected the request.'));
+            }
+          });
+          setTimeout(() => reject(new Error('Server acknowledgment timed out')), 10000);
+        });
+
+        return; // Socket请求成功，直接返回
+      } catch (socketError) {
+        console.error('Socket.IO request failed, falling back to HTTP:', socketError);
+        // 如果Socket失败，则继续执行HTTP请求
+      }
+
+      // HTTP API 作为备用方案
+      console.log('Falling back to HTTP API to request customer service.');
+      const requestTimeout = new Promise(resolve => setTimeout(() => resolve({ ok: false, status: 504, statusText: 'Gateway Timeout' }), 10000)); // 10秒超时
+      const response = await Promise.race([
+        fetch(customerServiceEndpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Origin': window.location.origin
+          },
+          mode: 'cors',
+          body: JSON.stringify({
+            message: "请求人工客服",
+            websiteId: config.websiteId,
+            apiKey: config.apiKey,
+            chatSessionId: sessionId,
+            pageUrl: window.location.href,
+            userAgent: navigator.userAgent,
+            needsHumanSupport: true,
+            supportReason: reason,
+            timestamp: new Date().toISOString()
+          }),
+        }),
+        requestTimeout
+      ]);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Failed with status ${response.status}`);
+      }
+
+      console.log('Customer service request sent successfully via HTTP API');
+
+      // 既然HTTP请求成功了，再次尝试初始化Socket连接
+      initSocketConnection();
+
+    } catch (error) {
+      console.error('Failed to request customer service:', error);
+      addMessage(`抱歉，连接客服失败: ${error.message}，请稍后再试。`, 'bot');
     }
   }
 
@@ -983,18 +1422,270 @@
   // });
 
   // 在文档加载完成后初始化
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initChatbot);
-  } else {
-    initChatbot();
+  function ensureInit() {
+    console.log('Ensuring chatbot initialization with document.readyState:', document.readyState);
+
+    // 如果之前初始化失败或没有初始化
+    if (!document.querySelector('.alis-chatbot-container')) {
+      console.log('No chatbot container found, initializing now');
+      initChatbot();
+    } else {
+      console.log('Chatbot container already exists');
+    }
   }
+
+  // 处理不同的DOM加载状态
+  if (document.readyState === 'loading') {
+    console.log('Document still loading, adding DOMContentLoaded listener for chatbot');
+    document.addEventListener('DOMContentLoaded', ensureInit);
+    // 额外保险：如果DOMContentLoaded事件已经错过，用延迟作为备份
+    setTimeout(ensureInit, 1000);
+  } else {
+    console.log('Document already loaded, initializing chatbot immediately');
+    ensureInit();
+  }
+
+  // 最后的保险措施：如果一切都失败了，在window.onload之后再尝试
+  window.addEventListener('load', function () {
+    setTimeout(ensureInit, 500);
+  });
 
   // 添加到window全局对象以便调试
   window.AlisChatbot = {
     init: initChatbot,
     config: config,
-    addMessage: addMessage
+    addMessage: addMessage,
+    ensureInit: ensureInit
   };
 
-  console.log(`Chatbot initialized. API endpoint: ${apiEndpoint}`);
+  // 动态加载Socket.IO客户端库
+  function loadScript(src, callback) {
+    const script = document.createElement('script');
+    script.src = src;
+    script.async = true;
+    script.onload = callback;
+    document.head.appendChild(script);
+  }
+
+  // 初始化Socket.IO连接
+  function initSocketConnection() {
+    // 如果已经加载了Socket.IO库，直接初始化
+    if (window.io) {
+      connectSocket();
+      return;
+    }
+
+    // 否则先加载Socket.IO库
+    loadScript('https://cdn.socket.io/4.6.0/socket.io.min.js', function () {
+      connectSocket();
+    });
+  }
+
+  // 连接到Socket.IO服务器
+  function connectSocket() {
+    if (!sessionId) return;
+    if (socket && socket.connected) {
+      console.log('Socket.IO is already connected.');
+      return;
+    }
+
+    // 修正socketUrl，确保正确连接到服务器
+    let socketUrl = config.apiUrl
+      ? new URL(config.apiUrl).origin
+      : config.scriptOrigin;
+
+    // 添加端口号3001
+    socketUrl = socketUrl.replace(/:\d+$/, '') + ':3001';
+
+    // 添加最大重试次数和当前重试计数
+    const maxRetries = 3;
+    let retryCount = 0;
+    let connectTimeoutId = null;
+    let connectionError = false;
+
+    try {
+      console.log('Attempting to connect to Socket.IO server at:', socketUrl);
+
+      // 添加连接超时处理
+      connectTimeoutId = setTimeout(() => {
+        console.error('Socket.IO connection timeout');
+        if (socket && !socket.connected) {
+          socket.disconnect();
+        }
+        connectionError = true;
+        handleSocketConnectionError('连接超时');
+      }, 10000); // 10秒超时
+
+      // 创建Socket实例时增加重连配置
+      socket = window.io(socketUrl, {
+        path: '/socket.io', // 确保路径匹配
+        reconnection: true,
+        reconnectionAttempts: 5,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 5000,
+        timeout: 20000,
+        transports: ['websocket', 'polling'] // 尝试WebSocket和长轮询两种方式
+      });
+
+      socket.on('connect', function () {
+        console.log('Socket.IO connected:', socket.id);
+        // 清除连接超时计时器
+        if (connectTimeoutId) {
+          clearTimeout(connectTimeoutId);
+          connectTimeoutId = null;
+        }
+
+        // 重置错误状态和重试计数
+        connectionError = false;
+        retryCount = 0;
+
+        // 保存重要元数据到socket对象
+        socket.data = {
+          role: 'user',
+          chatSessionId: sessionId
+        };
+
+        // 加入聊天室
+        socket.emit('join', {
+          chatSessionId: sessionId,
+          role: 'user',
+          websiteId: config.websiteId,
+          pageUrl: window.location.href,
+          userAgent: navigator.userAgent
+        });
+
+        // 如果之前显示了连接失败消息，现在添加连接成功消息
+        if (document.querySelectorAll('.alis-message').length > 0) {
+          const lastMessage = getLastMessageContent();
+          if (lastMessage && lastMessage.includes('连接客服失败')) {
+            addMessage('已成功连接到服务器，等待客服接入...', 'system');
+          }
+        }
+      });
+
+      socket.on('connect_error', function (error) {
+        console.error('Socket connection error:', error);
+        retryCount++;
+
+        if (retryCount >= maxRetries) {
+          connectionError = true;
+          handleSocketConnectionError('连接服务器失败');
+        }
+      });
+
+      socket.on('reconnect_failed', function () {
+        console.error('Socket reconnection failed after', maxRetries, 'attempts');
+        connectionError = true;
+        handleSocketConnectionError('重连服务器失败');
+      });
+
+      socket.on('server_info', function (data) {
+        console.log('Server info:', data);
+      });
+
+      socket.on('join_success', function (data) {
+        console.log('Join success:', data);
+      });
+
+      socket.on('user_joined', function (data) {
+        console.log('User joined:', data);
+        if (data.role === 'admin') {
+          // 客服加入聊天
+          addMessage(data.message || '客服人员已接入', 'system');
+        }
+      });
+
+      socket.on('chat_message', function (data) {
+        console.log('New message received:', data);
+
+        // 移除任何加载中指示器
+        document.querySelectorAll('.alis-typing-indicator').forEach(el => {
+          const parent = el.closest('.alis-message');
+          if (parent) parent.remove();
+        });
+
+        // 根据消息的角色和内容添加消息
+        if (data.role === 'assistant') {
+          // 客服消息
+          addMessage(data.content, 'bot', `msg-${data.id || Date.now()}`);
+        } else if (data.role === 'system') {
+          // 系统消息
+          addMessage(data.content, 'system', `msg-${data.id || Date.now()}`);
+        } else if (data.role === 'user' && socket.data && socket.data.role === 'admin') {
+          // 仅当当前用户为管理员时才显示用户消息
+          addMessage(data.content, 'user', `msg-${data.id || Date.now()}`);
+        }
+      });
+
+      socket.on('typing', function (data) {
+        console.log('Typing indicator:', data);
+        if (data.role === 'admin' && data.isTyping) {
+          // 显示客服正在输入...
+          const typingId = 'typing-' + Date.now();
+          const existingTyping = document.querySelector('.alis-typing-indicator');
+          if (!existingTyping) {
+            addMessage('<div class="alis-typing-indicator"><span></span><span></span><span></span></div>', 'bot', typingId, true, false);
+          }
+        } else if (data.role === 'admin' && !data.isTyping) {
+          // 移除"正在输入"指示器
+          document.querySelectorAll('.alis-typing-indicator').forEach(el => {
+            const parent = el.closest('.alis-message');
+            if (parent) parent.remove();
+          });
+        }
+      });
+
+      socket.on('customer_service_requested', function (data) {
+        console.log('Customer service request acknowledged:', data);
+        if (data.success) {
+          addMessage('您的客服请求已发送，客服人员将尽快与您联系。', 'system');
+        }
+      });
+
+      socket.on('error', function (data) {
+        console.error('Socket error:', data);
+        handleSocketConnectionError(data.message || '未知错误');
+      });
+
+      socket.on('disconnect', function () {
+        console.log('Socket.IO disconnected');
+        // 只有在已经连接成功后再显示断开消息
+        if (!connectionError && socket.connected) {
+          addMessage('与服务器的连接已断开，正在尝试重新连接...', 'system');
+        }
+      });
+
+      socket.on('reconnect', function (attemptNumber) {
+        console.log('Socket.IO reconnected after', attemptNumber, 'attempts');
+        addMessage('已重新连接到服务器', 'system');
+      });
+
+    } catch (err) {
+      console.error('Failed to connect to Socket.IO:', err);
+      connectionError = true;
+      handleSocketConnectionError('连接服务器失败: ' + err.message);
+    }
+  }
+
+  // 处理Socket连接错误
+  function handleSocketConnectionError(errorMessage) {
+    console.error('Socket connection error handled:', errorMessage);
+    // 向用户显示连接失败消息，但避免重复显示
+    const lastMessage = getLastMessageContent();
+    if (!lastMessage || !lastMessage.includes('抱歉，连接客服失败')) {
+      addMessage(`抱歉，连接客服失败: ${errorMessage}，请检查网络并稍后再试。`, 'bot');
+    }
+  }
+
+  // 获取最后一条消息内容
+  function getLastMessageContent() {
+    const messages = chatMessages.querySelectorAll('.alis-message');
+    if (messages.length > 0) {
+      const lastMessage = messages[messages.length - 1];
+      return lastMessage.textContent;
+    }
+    return null;
+  }
+
+  console.log(`Chatbot initialized. API endpoint: ${apiEndpoint}, config:`, config);
 })();
