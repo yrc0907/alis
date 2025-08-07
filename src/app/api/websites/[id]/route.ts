@@ -5,7 +5,7 @@ import { auth } from '@/auth';
 // 获取单个网站信息
 export async function GET(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
@@ -19,7 +19,7 @@ export async function GET(
     }
 
     const userId = session.user.id;
-    const { id } = params;
+    const id = (await params).id;
 
     // 查询网站，同时验证所有权
     const website = await prisma.website.findFirst({
@@ -40,10 +40,11 @@ export async function GET(
     }
 
     return NextResponse.json(website);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error fetching website:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to fetch website' },
+      { error: `Failed to fetch website: ${errorMessage}` },
       { status: 500 }
     );
   }
@@ -52,7 +53,7 @@ export async function GET(
 // 更新网站信息
 export async function PUT(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
@@ -66,7 +67,7 @@ export async function PUT(
     }
 
     const userId = session.user.id;
-    const { id } = params;
+    const id = (await params).id;
     const { name, domain, description } = await req.json();
 
     // 验证必填字段
@@ -123,10 +124,11 @@ export async function PUT(
     });
 
     return NextResponse.json(updatedWebsite);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error updating website:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to update website' },
+      { error: `Failed to update website: ${errorMessage}` },
       { status: 500 }
     );
   }
@@ -135,7 +137,7 @@ export async function PUT(
 // 删除网站
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
@@ -149,7 +151,7 @@ export async function DELETE(
     }
 
     const userId = session.user.id;
-    const { id } = params;
+    const id = (await params).id;
 
     // 验证网站是否存在并且属于当前用户
     const website = await prisma.website.findFirst({
@@ -172,10 +174,11 @@ export async function DELETE(
     });
 
     return NextResponse.json({ success: true });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error deleting website:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to delete website' },
+      { error: `Failed to delete website: ${errorMessage}` },
       { status: 500 }
     );
   }

@@ -41,7 +41,7 @@ export async function POST(req: Request) {
 
     switch (type) {
       case 'CONFIRMATION':
-        subject = `预约确认: ${appointment.website.name}`;
+        subject = `[${appointment.website.name}]：您的预约已确认`;
         emailComponent = AppointmentConfirmationEmail({
           customerName: appointment.name ?? undefined,
           appointmentDate: appointment.date,
@@ -50,20 +50,19 @@ export async function POST(req: Request) {
         });
         break;
       case 'REJECTION':
-        subject = `关于您在 ${appointment.website.name} 的预约`;
+        subject = `关于您在 ${appointment.website.name} 的预约请求`;
         emailComponent = AppointmentRejectionEmail({
           customerName: appointment.name ?? undefined,
           appointmentDate: appointment.date,
           rejectionReason: reason,
           websiteName: appointment.website.name,
-          websiteUrl: `http://${appointment.website.domain}`,
         });
         break;
       case 'RESCHEDULED':
         if (!newDateTime) {
           return NextResponse.json({ error: 'New date and time are required for rescheduling' }, { status: 400 });
         }
-        subject = `重要通知: 您的预约时间已更新`;
+        subject = `重要通知：[${appointment.website.name}] 提醒您预约时间已更新`;
         emailComponent = AppointmentRescheduledEmail({
           customerName: appointment.name ?? undefined,
           originalDate: appointment.date,
@@ -79,7 +78,7 @@ export async function POST(req: Request) {
     }
 
     const { data, error } = await resend.emails.send({
-      from: `通知 <noreply@${process.env.EMAIL_DOMAIN}>`,
+      from: `${appointment.website.name} <noreply@${process.env.EMAIL_DOMAIN}>`,
       to: [appointment.email],
       subject: subject,
       react: emailComponent,
@@ -92,8 +91,9 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ message: 'Email sent successfully', data });
 
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Server Error:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ error: `Internal Server Error: ${errorMessage}` }, { status: 500 });
   }
 } 

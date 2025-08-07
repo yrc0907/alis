@@ -1,7 +1,15 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { auth } from '@/auth';
-import { Prisma } from '@prisma/client';
+
+interface Interest {
+  userId: string | null;
+  chatSessionId: string | null;
+  interestType: string;
+  chatSession?: {
+    visitorId: string | null;
+  } | null;
+}
 
 // 获取用户兴趣数据
 export async function GET(req: Request) {
@@ -28,7 +36,7 @@ export async function GET(req: Request) {
     startDate.setDate(startDate.getDate() - period);
 
     // 构建查询条件
-    const whereCondition: Prisma.UserInterestWhereInput = {
+    const whereCondition: any = {
       createdAt: {
         gte: startDate,
         lte: endDate
@@ -46,7 +54,7 @@ export async function GET(req: Request) {
       });
 
       whereCondition.websiteId = {
-        in: userWebsites.map(site => site.id)
+        in: userWebsites.map((site: { id: string }) => site.id)
       };
     }
 
@@ -108,7 +116,7 @@ export async function GET(req: Request) {
 
     // 计算独立访客数
     const uniqueVisitors = new Set();
-    interests.forEach(interest => {
+    interests.forEach((interest: Interest) => {
       const visitorId = interest.userId ||
         interest.chatSession?.visitorId ||
         `anonymous_${interest.chatSessionId}`;
@@ -118,7 +126,7 @@ export async function GET(req: Request) {
     });
 
     // 计算有效转化率（估算值：预约兴趣占比）
-    const appointmentInterests = interests.filter(interest =>
+    const appointmentInterests = interests.filter((interest: Interest) =>
       interest.interestType === 'APPOINTMENT'
     ).length;
     const conversionRate = totalInterests > 0
@@ -134,7 +142,7 @@ export async function GET(req: Request) {
         avgInterestLevel: avgInterestLevel._avg.interestLevel || 0,
         conversionRate
       },
-      interestsByType: interestsByType.map(item => ({
+      interestsByType: interestsByType.map((item: { interestType: string, _count: { interestType: number } }) => ({
         type: item.interestType,
         count: item._count.interestType
       })),
@@ -142,10 +150,11 @@ export async function GET(req: Request) {
     };
 
     return NextResponse.json(response);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error fetching user interests:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to fetch user interests' },
+      { error: `Failed to fetch user interests: ${errorMessage}` },
       { status: 500 }
     );
   }

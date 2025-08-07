@@ -156,8 +156,9 @@ async function generateStreamingResponse(messages: ChatMessage[], controller: Re
               if (content) {
                 controller.enqueue(new TextEncoder().encode(encodeStreamData(content)));
               }
-            } catch {
+            } catch (error: unknown) {
               // 忽略解析错误
+              console.error('JSON解析错误:', error);
             }
           }
         }
@@ -173,18 +174,18 @@ async function generateStreamingResponse(messages: ChatMessage[], controller: Re
               controller.enqueue(new TextEncoder().encode(encodeStreamData(content)));
             }
           }
-        } catch {
+        } catch (error: unknown) {
           // 忽略解析错误
-          console.error('解析错误', buffer);
+          console.error('解析错误', buffer, error);
         }
       }
 
-    } catch {
+    } catch (error: unknown) {
       controller.enqueue(new TextEncoder().encode(encodeStreamData("读取AI响应时发生错误。请稍后再试。")));
     } finally {
       controller.close();
     }
-  } catch {
+  } catch (error: unknown) {
     controller.enqueue(new TextEncoder().encode(encodeStreamData("抱歉，AI响应生成失败。请稍后再试。")));
     controller.close();
   }
@@ -305,9 +306,11 @@ export async function POST(req: Request) {
         { headers: corsHeaders() }
       );
     }
-  } catch {
+  } catch (error: unknown) {
+    console.error('Error processing chat request:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: `Internal server error: ${errorMessage}` },
       {
         status: 500,
         headers: corsHeaders()

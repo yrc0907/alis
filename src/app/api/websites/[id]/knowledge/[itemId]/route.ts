@@ -5,7 +5,7 @@ import { auth } from '@/auth';
 // 获取单个知识条目
 export async function GET(
   req: Request,
-  { params }: { params: { id: string; itemId: string } }
+  { params }: { params: Promise<{ id: string; itemId: string }> }
 ) {
   try {
     const session = await auth();
@@ -19,7 +19,9 @@ export async function GET(
     }
 
     const userId = session.user.id;
-    const { id: websiteId, itemId } = params;
+    const awaitedParams = await params;
+    const websiteId = awaitedParams.id;
+    const itemId = awaitedParams.itemId;
 
     // 确认网站存在并且属于当前用户
     const website = await prisma.website.findFirst({
@@ -52,10 +54,11 @@ export async function GET(
     }
 
     return NextResponse.json(knowledgeItem);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error fetching knowledge item:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to fetch knowledge item' },
+      { error: `Failed to fetch knowledge item: ${errorMessage}` },
       { status: 500 }
     );
   }
@@ -64,7 +67,7 @@ export async function GET(
 // 更新知识条目
 export async function PUT(
   req: Request,
-  { params }: { params: { id: string; itemId: string } }
+  { params }: { params: Promise<{ id: string; itemId: string }> }
 ) {
   try {
     const session = await auth();
@@ -78,7 +81,9 @@ export async function PUT(
     }
 
     const userId = session.user.id;
-    const { id: websiteId, itemId } = params;
+    const awaitedParams = await params;
+    const websiteId = awaitedParams.id;
+    const itemId = awaitedParams.itemId;
     const { question, answer, keywords } = await req.json();
 
     // 验证必填字段
@@ -140,10 +145,11 @@ export async function PUT(
     });
 
     return NextResponse.json(updatedItem);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error updating knowledge item:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to update knowledge item' },
+      { error: `Failed to update knowledge item: ${errorMessage}` },
       { status: 500 }
     );
   }
@@ -152,7 +158,7 @@ export async function PUT(
 // 删除知识条目
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string; itemId: string } }
+  { params }: { params: Promise<{ id: string; itemId: string }> }
 ) {
   try {
     const session = await auth();
@@ -166,7 +172,9 @@ export async function DELETE(
     }
 
     const userId = session.user.id;
-    const { id: websiteId, itemId } = params;
+    const awaitedParams = await params;
+    const websiteId = awaitedParams.id;
+    const itemId = awaitedParams.itemId;
 
     // 确认网站存在并且属于当前用户
     const website = await prisma.website.findFirst({
@@ -206,10 +214,11 @@ export async function DELETE(
     });
 
     return NextResponse.json({ success: true });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error deleting knowledge item:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to delete knowledge item' },
+      { error: `Failed to delete knowledge item: ${errorMessage}` },
       { status: 500 }
     );
   }

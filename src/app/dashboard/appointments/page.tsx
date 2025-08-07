@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 import {
   Card,
   CardContent,
@@ -78,7 +79,7 @@ const statusTranslations: Record<AppointmentStatus, string> = {
 };
 
 // 新增：拒绝预约的子组件
-function RejectAppointmentForm({ onCancel, onSubmit }: { onCancel: () => void, onSubmit: (reason: string) => void }) {
+function RejectAppointmentForm({ onCancel, onSubmit, isLoading }: { onCancel: () => void, onSubmit: (reason: string) => Promise<void>, isLoading: boolean }) {
   const [reason, setReason] = useState('');
   return (
     <div className="mt-4">
@@ -89,17 +90,20 @@ function RejectAppointmentForm({ onCancel, onSubmit }: { onCancel: () => void, o
         placeholder="例如：时间冲突，需要更多信息等。"
         value={reason}
         onChange={(e) => setReason(e.target.value)}
+        disabled={isLoading}
       />
       <div className="flex justify-end gap-2 mt-2">
-        <Button variant="outline" onClick={onCancel}>取消</Button>
-        <Button variant="destructive" onClick={() => onSubmit(reason)}>确认拒绝</Button>
+        <Button variant="outline" onClick={onCancel} disabled={isLoading}>取消</Button>
+        <Button variant="destructive" onClick={() => onSubmit(reason)} disabled={isLoading}>
+          {isLoading ? "处理中..." : "确认拒绝"}
+        </Button>
       </div>
     </div>
   );
 }
 
 // 新增：修改预约时间的子组件
-function RescheduleAppointmentForm({ onCancel, onSubmit, currentDateTime }: { onCancel: () => void, onSubmit: (newDateTime: string, reason: string) => void, currentDateTime: string }) {
+function RescheduleAppointmentForm({ onCancel, onSubmit, currentDateTime, isLoading }: { onCancel: () => void, onSubmit: (newDateTime: string, reason: string) => Promise<void>, currentDateTime: string, isLoading: boolean }) {
   const [newDateTime, setNewDateTime] = useState(currentDateTime);
   const [reason, setReason] = useState('');
   return (
@@ -112,6 +116,7 @@ function RescheduleAppointmentForm({ onCancel, onSubmit, currentDateTime }: { on
         className="w-full p-2 border rounded-md mb-2"
         value={newDateTime}
         onChange={(e) => setNewDateTime(e.target.value)}
+        disabled={isLoading}
       />
       <h3 className="font-medium mb-2">修改理由 (可选)</h3>
       <textarea
@@ -120,10 +125,13 @@ function RescheduleAppointmentForm({ onCancel, onSubmit, currentDateTime }: { on
         placeholder="例如：调整内部日程安排。"
         value={reason}
         onChange={(e) => setReason(e.target.value)}
+        disabled={isLoading}
       />
       <div className="flex justify-end gap-2 mt-2">
-        <Button variant="outline" onClick={onCancel}>取消</Button>
-        <Button onClick={() => onSubmit(newDateTime, reason)}>确认修改</Button>
+        <Button variant="outline" onClick={onCancel} disabled={isLoading}>取消</Button>
+        <Button onClick={() => onSubmit(newDateTime, reason)} disabled={isLoading}>
+          {isLoading ? "修改中..." : "确认修改"}
+        </Button>
       </div>
     </div>
   );
@@ -137,6 +145,7 @@ export default function AppointmentsPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<AppointmentStatus | "all">("all");
   const [dialogView, setDialogView] = useState<'details' | 'reject' | 'reschedule'>('details');
+  const [isActionLoading, setIsActionLoading] = useState(false);
 
   // 获取预约数据
   useEffect(() => {
@@ -198,11 +207,13 @@ export default function AppointmentsPage() {
     } catch (error) {
       console.error(`Failed to send email for appointment ${appointmentId}:`, error);
       // 在这里可以添加用户反馈，例如一个toast通知
+      toast.error("邮件发送失败，请稍后再试。");
     }
   };
 
   // 更新预约状态
   const updateAppointmentStatus = async (id: string, status: AppointmentStatus) => {
+    setIsActionLoading(true);
     try {
       const response = await fetch(`/api/appointments/${id}`, {
         method: 'PATCH',
@@ -221,11 +232,14 @@ export default function AppointmentsPage() {
 
       // 如果是确认预约，发送确认邮件
       if (status === 'CONFIRMED') {
-        sendEmailNotification('CONFIRMATION', id);
+        await sendEmailNotification('CONFIRMATION', id);
       }
-
+      toast.success("预约状态已成功更新！");
     } catch (error) {
       console.error('Error updating appointment status:', error);
+      toast.error("状态更新失败，请检查网络连接。");
+    } finally {
+      setIsActionLoading(false);
     }
   };
 
@@ -241,22 +255,31 @@ export default function AppointmentsPage() {
       if (selectedAppointment?.id === id) {
         setSelectedAppointment(prev => prev ? { ...prev, isRead: true } : null);
       }
+      toast.info("预约已标记为已读。");
     } catch (error) {
       console.error('Error marking appointment as read:', error);
+      toast.error("操作失败，请稍后再试。");
     }
   };
 
-  const handleRejectSubmit = (reason: string) => {
+  const handleRejectSubmit = async (reason: string) => {
     if (!selectedAppointment) return;
-    // 1. 更新状态为CANCELLED
-    updateAppointmentStatus(selectedAppointment.id, "CANCELLED");
-    // 2. 发送拒绝邮件
-    sendEmailNotification('REJECTION', selectedAppointment.id, { reason });
-    setIsDialogOpen(false);
+    setIsActionLoading(true);
+    try {
+      // 1. 更新状态为CANCELLED
+      await updateAppointmentStatus(selectedAppointment.id, "CANCELLED");
+      // 2. 发送拒绝邮件
+      await sendEmailNotification('REJECTION', selectedAppointment.id, { reason });
+      setIsDialogOpen(false);
+      toast.success("预约已成功拒绝。");
+    } finally {
+      setIsActionLoading(false);
+    }
   };
 
   const handleRescheduleSubmit = async (newDateTime: string, reason: string) => {
     if (!selectedAppointment) return;
+    setIsActionLoading(true);
     try {
       // 1. 调用API更新预约时间
       const response = await fetch(`/api/appointments/${selectedAppointment.id}/reschedule`, {
@@ -277,9 +300,12 @@ export default function AppointmentsPage() {
       await sendEmailNotification('RESCHEDULED', selectedAppointment.id, { newDateTime, reason });
 
       setIsDialogOpen(false);
-
+      toast.success("预约时间已成功修改！");
     } catch (error) {
       console.error('Error in reschedule process:', error);
+      toast.error("修改预约失败，请稍后再试。");
+    } finally {
+      setIsActionLoading(false);
     }
   };
 
@@ -477,21 +503,26 @@ export default function AppointmentsPage() {
                   </div>
                 </div>
                 <DialogFooter className="flex flex-wrap sm:flex-nowrap gap-2">
-                  <Button variant="outline" onClick={() => setDialogView('reschedule')}>修改时间</Button>
+                  <Button variant="outline" onClick={() => setDialogView('reschedule')} disabled={isActionLoading}>修改时间</Button>
                   {selectedAppointment.status === "PENDING" && (
                     <>
-                      <Button variant="destructive" onClick={() => setDialogView('reject')}>拒绝</Button>
-                      <Button onClick={() => updateAppointmentStatus(selectedAppointment.id, "CONFIRMED")}>确认预约</Button>
+                      <Button variant="destructive" onClick={() => setDialogView('reject')} disabled={isActionLoading}>拒绝</Button>
+                      <Button onClick={() => updateAppointmentStatus(selectedAppointment.id, "CONFIRMED")} disabled={isActionLoading}>
+                        {isActionLoading ? "处理中..." : "确认预约"}
+                      </Button>
                     </>
                   )}
                   {selectedAppointment.status === "CONFIRMED" && (
-                    <Button onClick={() => updateAppointmentStatus(selectedAppointment.id, "COMPLETED")}>标记完成</Button>
+                    <Button onClick={() => updateAppointmentStatus(selectedAppointment.id, "COMPLETED")} disabled={isActionLoading}>
+                      {isActionLoading ? "处理中..." : "标记完成"}
+                    </Button>
                   )}
                   {!selectedAppointment.isRead && (
                     <Button
                       variant="secondary"
                       onClick={() => markAsRead(selectedAppointment.id)}
                       className="w-full sm:w-auto"
+                      disabled={isActionLoading}
                     >
                       标记为已读
                     </Button>
@@ -504,6 +535,7 @@ export default function AppointmentsPage() {
               <RejectAppointmentForm
                 onCancel={() => setDialogView('details')}
                 onSubmit={handleRejectSubmit}
+                isLoading={isActionLoading}
               />
             )}
 
@@ -512,6 +544,7 @@ export default function AppointmentsPage() {
                 onCancel={() => setDialogView('details')}
                 onSubmit={handleRescheduleSubmit}
                 currentDateTime={new Date(selectedAppointment.date).toISOString().slice(0, 16)}
+                isLoading={isActionLoading}
               />
             )}
 

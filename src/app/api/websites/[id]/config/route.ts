@@ -5,7 +5,7 @@ import { auth } from '@/auth';
 // 获取网站的知识库配置
 export async function GET(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
@@ -19,7 +19,7 @@ export async function GET(
     }
 
     const userId = session.user.id;
-    const { id: websiteId } = params;
+    const websiteId = (await params).id;
 
     // 确认网站存在并且属于当前用户
     const website = await prisma.website.findFirst({
@@ -51,10 +51,11 @@ export async function GET(
     }
 
     return NextResponse.json(config);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error fetching knowledge config:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to fetch knowledge config' },
+      { error: `Failed to fetch knowledge config: ${errorMessage}` },
       { status: 500 }
     );
   }
@@ -63,7 +64,7 @@ export async function GET(
 // 创建或更新网站的知识库配置
 export async function POST(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
@@ -77,7 +78,7 @@ export async function POST(
     }
 
     const userId = session.user.id;
-    const { id: websiteId } = params;
+    const websiteId = (await params).id;
     const { enabled, threshold } = await req.json();
 
     // 验证必填字段
@@ -130,10 +131,11 @@ export async function POST(
       });
 
     return NextResponse.json(config);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error updating knowledge config:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to update knowledge config' },
+      { error: `Failed to update knowledge config: ${errorMessage}` },
       { status: 500 }
     );
   }
