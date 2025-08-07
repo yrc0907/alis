@@ -6,6 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CopyIcon, CheckIcon } from 'lucide-react';
 
+interface ChatbotConfig {
+  displayName?: string;
+  welcomeMessage?: string;
+  primaryColor?: string;
+  position?: string;
+  avatarUrl?: string;
+}
 interface EmbedCodeGeneratorProps {
   website: {
     id: string;
@@ -18,18 +25,34 @@ interface EmbedCodeGeneratorProps {
 export default function EmbedCodeGenerator({ website }: EmbedCodeGeneratorProps) {
   const [copied, setCopied] = useState(false);
   const [baseUrl, setBaseUrl] = useState('');
+  const [config, setConfig] = useState<ChatbotConfig | null>(null);
 
-  // 设置基础URL
+  // 设置基础URL并获取配置
   useEffect(() => {
     setBaseUrl(window.location.origin);
-  }, []);
+
+    const fetchConfig = async () => {
+      try {
+        const response = await fetch(`/api/websites/${website.id}/chatbot-config`);
+        if (response.ok) {
+          const data = await response.json();
+          setConfig(data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch chatbot config for embed code", error);
+      }
+    };
+
+    fetchConfig();
+  }, [website.id]);
 
   // 生成嵌入代码
   const scriptCode = `<script src="${baseUrl}/chatbot-embed.js" 
-  data-name="${website.name} 助手"
-  data-message="您好！我是${website.name}的AI助手，有什么可以帮您的吗？" 
-  data-color="#fb923c" 
-  data-position="bottom-right"
+  data-name="${config?.displayName || website.name + ' 助手'}"
+  data-message="${config?.welcomeMessage || '您好！我是' + website.name + '的AI助手，有什么可以帮您的吗？'}" 
+  data-color="${config?.primaryColor || '#fb923c'}" 
+  data-position="${config?.position || 'bottom-right'}"
+  ${config?.avatarUrl ? `data-avatar-url="${config.avatarUrl}"` : ''}
   data-api-url="${baseUrl}/api/website-chatbot"
   data-website-id="${website.id}"
   data-api-key="${website.apiKey}">

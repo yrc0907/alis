@@ -7,9 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { ArrowUpRight, CreditCard, Activity, BarChart, LineChart, Globe, PlusCircle, Calendar, MessageCircle } from "lucide-react";
+import { BarChart, Globe, PlusCircle, Calendar, Users } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Badge } from "@/components/ui/badge";
 
 // 网站类型定义
 interface Website {
@@ -22,32 +23,32 @@ interface Website {
   knowledgeItems?: { id: string }[];
 }
 
-// Reusable stat card component for better maintainability
-interface StatCardProps {
-  title: string;
-  value: string;
-  change: string;
-  icon: React.ElementType;
-  positive?: boolean;
+// 预约类型定义
+interface Appointment {
+  id: string;
+  name: string | null;
+  date: string;
+  status: 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
+  website: {
+    name: string;
+  };
 }
 
-const StatCard = ({ title, value, change, icon: Icon, positive = true }: StatCardProps) => (
-  <Card className="p-4">
-    <div className="flex items-center justify-between">
-      <div>
-        <p className="text-sm font-medium text-muted-foreground">{title}</p>
-        <h3 className="text-2xl font-bold mt-1">{value}</h3>
-        <p className={`text-xs ${positive ? "text-green-500" : "text-red-500"} flex items-center mt-1`}>
-          <ArrowUpRight className="h-3 w-3 mr-1" />
-          {change}
-        </p>
-      </div>
-      <div className="p-2 bg-primary/10 rounded-full">
-        <Icon className="h-5 w-5 text-primary" />
-      </div>
-    </div>
-  </Card>
-);
+// 用户兴趣类型定义
+interface UserInterest {
+  type: string;
+  count: number;
+  percentage?: string;
+}
+
+// 潜在用户类型定义
+interface PotentialUser {
+  id: string;
+  name: string | null;
+  email: string;
+  source: string;
+  createdAt: string;
+}
 
 // 网站卡片组件
 const WebsiteCard = ({ website }: { website: Website }) => {
@@ -90,7 +91,9 @@ export default function DashboardPage() {
     description: ""
   });
   const [error, setError] = useState("");
-  const [chatSessions, setChatSessions] = useState<any[]>([]);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [userInterests, setUserInterests] = useState<UserInterest[]>([]);
+  const [potentialUsers, setPotentialUsers] = useState<PotentialUser[]>([]);
   const router = useRouter();
 
   // 获取网站列表
@@ -150,25 +153,59 @@ export default function DashboardPage() {
     }
   };
 
-  // 获取最近的聊天会话
-  const fetchChatSessions = async () => {
+  // 获取最近的预约
+  const fetchAppointments = async () => {
     try {
-      const response = await fetch("/api/chats?limit=4");
-
+      const response = await fetch("/api/appointments?limit=5"); // 获取最近5条
       if (!response.ok) {
-        throw new Error("Failed to fetch chat sessions");
+        throw new Error("Failed to fetch appointments");
       }
-
       const data = await response.json();
-      setChatSessions(data);
+      setAppointments(data);
     } catch (error) {
-      console.error("Error fetching chat sessions:", error);
+      console.error("Error fetching appointments:", error);
+    }
+  };
+
+  // 获取用户兴趣数据
+  const fetchUserInterests = async () => {
+    try {
+      const response = await fetch("/api/user-interests");
+      if (!response.ok) {
+        throw new Error("Failed to fetch user interests");
+      }
+      const data = await response.json();
+      // 计算总数
+      const totalInterests = data.interestsByType.reduce((acc: number, item: UserInterest) => acc + item.count, 0);
+      // 转换成带百分比的数据
+      const interestsWithPercentage = data.interestsByType.map((item: UserInterest) => ({
+        ...item,
+        percentage: totalInterests > 0 ? ((item.count / totalInterests) * 100).toFixed(0) : 0,
+      }));
+      setUserInterests(interestsWithPercentage);
+    } catch (error) {
+      console.error("Error fetching user interests:", error);
+    }
+  };
+
+  // 获取潜在用户
+  const fetchPotentialUsers = async () => {
+    try {
+      const response = await fetch('/api/potential-users?limit=5');
+      if (response.ok) {
+        const data = await response.json();
+        setPotentialUsers(data);
+      }
+    } catch (error) {
+      console.error("Error fetching potential users:", error);
     }
   };
 
   useEffect(() => {
     fetchWebsites();
-    fetchChatSessions();
+    fetchAppointments();
+    fetchUserInterests();
+    fetchPotentialUsers();
   }, []);
 
   return (
@@ -253,32 +290,30 @@ export default function DashboardPage() {
               </div>
             ) : (
               <div className="space-y-4">
-                {websites.length > 0 ? (
+                {websites.length > 0 && appointments.length > 0 ? (
                   <div className="space-y-4">
-                    {[
-                      { name: '张先生', email: 'zhang@example.com', date: '2023-08-15 14:00', website: '公司官网', status: 'PENDING' },
-                      { name: '李小姐', email: 'li@example.com', date: '2023-08-14 10:30', website: '产品展示页', status: 'CONFIRMED' },
-                      { name: '匿名用户', email: 'anonymous@example.com', date: '2023-08-12 16:15', website: '公司官网', status: 'COMPLETED' }
-                    ].map((appointment, i) => (
-                      <div key={i} className="flex items-center justify-between pb-4 border-b last:border-0 last:pb-0">
+                    {appointments.map((appointment) => (
+                      <div key={appointment.id} className="flex items-center justify-between pb-4 border-b last:border-0 last:pb-0">
                         <div className="flex items-center gap-3">
                           <div className={`h-8 w-8 rounded-full flex items-center justify-center text-white ${appointment.status === 'PENDING' ? 'bg-amber-500' :
                             appointment.status === 'CONFIRMED' ? 'bg-green-500' :
                               'bg-blue-500'
                             }`}>
-                            {appointment.name.substring(0, 1)}
+                            {appointment.name ? appointment.name.substring(0, 1) : '匿'}
                           </div>
                           <div>
-                            <p className="text-sm font-medium">{appointment.name}</p>
-                            <p className="text-xs text-muted-foreground">{appointment.date}</p>
+                            <p className="text-sm font-medium">{appointment.name || '匿名用户'}</p>
+                            <p className="text-xs text-muted-foreground">{new Date(appointment.date).toLocaleString()}</p>
                           </div>
                         </div>
-                        <Button variant="outline" size="sm">查看</Button>
+                        <Button variant="outline" size="sm" asChild>
+                          <Link href={`/dashboard/appointments/${appointment.id}`}>查看</Link>
+                        </Button>
                       </div>
                     ))}
                     <div className="text-center pt-2">
-                      <Button variant="link" size="sm" className="text-xs">
-                        查看所有预约 →
+                      <Button variant="link" size="sm" className="text-xs" asChild>
+                        <Link href="/dashboard/appointments">查看所有预约 →</Link>
                       </Button>
                     </div>
                   </div>
@@ -327,57 +362,31 @@ export default function DashboardPage() {
               </div>
             ) : (
               <div>
-                {websites.length > 0 ? (
+                {websites.length > 0 && userInterests.length > 0 ? (
                   <div className="space-y-4">
                     <p className="text-sm mb-2">最近30天的用户兴趣分布</p>
 
-                    {/* 产品兴趣 */}
-                    <div className="space-y-1">
-                      <div className="flex justify-between text-xs">
-                        <span>产品信息</span>
-                        <span className="text-muted-foreground">42%</span>
+                    {userInterests.map((interest, index) => (
+                      <div className="space-y-1" key={index}>
+                        <div className="flex justify-between text-xs">
+                          <span>{interest.type}</span>
+                          <span className="text-muted-foreground">{interest.percentage}%</span>
+                        </div>
+                        <div className="h-2 rounded-full bg-gray-100">
+                          <div
+                            className={`h-2 rounded-full`}
+                            style={{
+                              width: `${interest.percentage}%`,
+                              backgroundColor: `hsl(${200 + index * 40}, 70%, 50%)`
+                            }}
+                          ></div>
+                        </div>
                       </div>
-                      <div className="h-2 rounded-full bg-gray-100">
-                        <div className="h-2 bg-blue-500 rounded-full" style={{ width: '42%' }}></div>
-                      </div>
-                    </div>
-
-                    {/* 价格兴趣 */}
-                    <div className="space-y-1">
-                      <div className="flex justify-between text-xs">
-                        <span>价格咨询</span>
-                        <span className="text-muted-foreground">28%</span>
-                      </div>
-                      <div className="h-2 rounded-full bg-gray-100">
-                        <div className="h-2 bg-amber-500 rounded-full" style={{ width: '28%' }}></div>
-                      </div>
-                    </div>
-
-                    {/* 预约兴趣 */}
-                    <div className="space-y-1">
-                      <div className="flex justify-between text-xs">
-                        <span>预约需求</span>
-                        <span className="text-muted-foreground">18%</span>
-                      </div>
-                      <div className="h-2 rounded-full bg-gray-100">
-                        <div className="h-2 bg-green-500 rounded-full" style={{ width: '18%' }}></div>
-                      </div>
-                    </div>
-
-                    {/* 联系方式 */}
-                    <div className="space-y-1">
-                      <div className="flex justify-between text-xs">
-                        <span>联系方式</span>
-                        <span className="text-muted-foreground">12%</span>
-                      </div>
-                      <div className="h-2 rounded-full bg-gray-100">
-                        <div className="h-2 bg-purple-500 rounded-full" style={{ width: '12%' }}></div>
-                      </div>
-                    </div>
+                    ))}
 
                     <div className="mt-4 text-center">
-                      <Button variant="link" size="sm" className="text-xs">
-                        查看详细分析 →
+                      <Button variant="link" size="sm" className="text-xs" asChild>
+                        <Link href="/dashboard/analysis">查看详细分析 →</Link>
                       </Button>
                     </div>
                   </div>
@@ -393,128 +402,51 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      {/* 统计信息 */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          title="总网站数"
-          value={`${websites.length}`}
-          change="+12.5%"
-          icon={Globe}
-        />
-
-        <StatCard
-          title="总知识条目"
-          value={websites.reduce((sum, site) => sum + (site.knowledgeItems?.length || 0), 0).toString()}
-          change="+7.2%"
-          icon={CreditCard}
-        />
-
-        <StatCard
-          title="活跃对话"
-          value="1,274"
-          change="+18.3%"
-          icon={Activity}
-        />
-
-        <StatCard
-          title="回答准确率"
-          value="85.2%"
-          change="+3.1%"
-          icon={BarChart}
-        />
-      </div>
-
-      {/* 活动日志和分析图表 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="p-4">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-medium">最近活动</h3>
+      {/* 潜在用户 */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <div className="space-y-1">
+            <CardTitle>潜在用户</CardTitle>
+            <CardDescription>
+              最近识别出的高意向用户
+            </CardDescription>
           </div>
-          <div className="space-y-4">
-            {[1, 2, 3, 4].map((item) => (
-              <div key={item} className="flex items-center gap-4 border-b pb-4 last:border-0">
-                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Globe className="h-5 w-5 text-primary" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium">新增知识库条目</p>
-                  <p className="text-xs text-muted-foreground">在 &apos;公司网站&apos; 中</p>
-                </div>
-                <p className="text-xs text-muted-foreground">2 小时前</p>
-              </div>
-            ))}
-          </div>
-        </Card>
-
-        {/* 修改聊天分析卡片内容 */}
-        <Card className="p-4">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-medium">聊天分析</h3>
-            <Link href="/dashboard/chats" className="text-xs text-primary hover:underline">
-              查看全部
-            </Link>
-          </div>
-          <div className="space-y-3 max-h-[260px] overflow-y-auto">
-            {isLoading ? (
-              <div className="animate-pulse space-y-3">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="flex justify-between items-center p-2 border-b last:border-0">
-                    <div className="flex items-center gap-2">
-                      <div className="h-8 w-8 bg-gray-200 rounded-full"></div>
-                      <div>
-                        <div className="h-4 bg-gray-200 rounded w-24 mb-1"></div>
-                        <div className="h-3 bg-gray-200 rounded w-16"></div>
-                      </div>
+          <Users className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="text-center py-8">加载中...</div>
+          ) : potentialUsers.length > 0 ? (
+            <div className="space-y-4">
+              {potentialUsers.map(user => (
+                <div key={user.id} className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="h-8 w-8 rounded-full flex items-center justify-center bg-blue-500 text-white">
+                      {user.name ? user.name.substring(0, 1) : '匿'}
                     </div>
-                    <div className="h-8 bg-gray-200 rounded w-16"></div>
+                    <div>
+                      <p className="text-sm font-medium">{user.name || '匿名用户'}</p>
+                      <p className="text-xs text-muted-foreground">{user.email}</p>
+                    </div>
                   </div>
-                ))}
+                  <Badge variant="outline">{user.source}</Badge>
+                </div>
+              ))}
+              <div className="text-center pt-2">
+                <Button variant="link" size="sm" className="text-xs" asChild>
+                  <Link href="/dashboard/potential-users">查看所有潜在用户 →</Link>
+                </Button>
               </div>
-            ) : (
-              <>
-                {websites.length > 0 ? (
-                  <div className="space-y-0">
-                    {chatSessions.length > 0 ? (
-                      chatSessions.map((chat) => (
-                        <Link
-                          href={`/dashboard/chats/${chat.id}`}
-                          key={chat.id}
-                          className="flex items-center justify-between p-2 border-b hover:bg-slate-50 transition-colors"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className={`h-8 w-8 rounded-full flex items-center justify-center text-white ${!chat.isRead ? 'bg-blue-500' : 'bg-gray-400'}`}>
-                              {chat.visitorId ? chat.visitorId.substring(0, 1) : '?'}
-                            </div>
-                            <div>
-                              <p className="text-sm font-medium flex items-center">
-                                {chat.visitorId ? `访客 ${chat.visitorId.substring(0, 6)}` : '匿名访客'}
-                                {!chat.isRead && <span className="ml-2 w-2 h-2 bg-blue-500 rounded-full"></span>}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                {chat.websiteName} · {formatTimeAgo(new Date(chat.lastActiveAt))}
-                              </p>
-                            </div>
-                          </div>
-                          <Button variant="outline" size="sm">查看</Button>
-                        </Link>
-                      ))
-                    ) : (
-                      <div className="text-center py-4">
-                        <p className="text-sm text-muted-foreground">暂无最近聊天</p>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <MessageCircle className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-                    <p className="text-sm text-muted-foreground">暂无聊天记录</p>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        </Card>
-      </div>
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <Users className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+              <p className="text-sm text-muted-foreground">暂无潜在用户记录</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
 
       {/* 添加网站对话框 */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -565,19 +497,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-// 时间格式化辅助函数
-const formatTimeAgo = (date: Date): string => {
-  const now = new Date();
-  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-
-  if (diffInSeconds < 60) {
-    return '刚刚';
-  } else if (diffInSeconds < 3600) {
-    return `${Math.floor(diffInSeconds / 60)}分钟前`;
-  } else if (diffInSeconds < 86400) {
-    return `${Math.floor(diffInSeconds / 3600)}小时前`;
-  } else {
-    return `${Math.floor(diffInSeconds / 86400)}天前`;
-  }
-};

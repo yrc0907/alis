@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { queryKnowledgeBase } from '@/lib/knowledge-base';
+import prisma from '@/lib/prisma';
+import { InterestType } from '@prisma/client';
 
 // 支持跨域请求的函数
 function corsHeaders() {
@@ -63,6 +65,44 @@ const DEFAULT_TEMPERATURE = 0.7;
 function encodeStreamData(chunk: string): string {
   // 确保JSON格式正确且有一个换行结尾
   return `data: ${JSON.stringify({ content: chunk })}\n\n`;
+}
+
+// 异步记录用户兴趣
+async function recordUserInterest(
+  message: string,
+  websiteId: string,
+  chatSessionId: string
+) {
+  // 定义关键词和兴趣类型的映射
+  const interestKeywords: { [key in InterestType]?: string[] } = {
+    PRODUCT: ['产品', '功能', '特色', '优势'],
+    SERVICE: ['服务', '支持', '售后'],
+    PRICING: ['价格', '多少钱', '费用', '报价'],
+    APPOINTMENT: ['预约', '预定', '时间', '安排'],
+    CONTACT: ['联系', '电话', '地址', '邮箱'],
+  };
+
+  for (const [type, keywords] of Object.entries(interestKeywords)) {
+    if (keywords.some(keyword => message.includes(keyword))) {
+      try {
+        await prisma.userInterest.create({
+          data: {
+            interestType: type as InterestType,
+            interestLevel: 0.6, // 默认设为中等兴趣
+            source: 'CHAT',
+            websiteId,
+            chatSessionId,
+            metadata: JSON.stringify({ message }),
+          },
+        });
+        console.log(`已记录用户兴趣: ${type} from session ${chatSessionId}`);
+        // 找到一个匹配后即可退出，避免重复记录
+        break;
+      } catch (error) {
+        console.error('记录用户兴趣失败:', error);
+      }
+    }
+  }
 }
 
 // 流式响应中使用知识库答案
@@ -258,7 +298,7 @@ interface HistoryMessage {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { message, history = [], stream = true } = body;
+    const { message, history = [], stream = true, websiteId, chatSessionId } = body;
 
     if (!message) {
       return NextResponse.json(
@@ -268,6 +308,11 @@ export async function POST(req: Request) {
           headers: corsHeaders()
         }
       );
+    }
+
+    // 异步记录用户兴趣，不阻塞主流程
+    if (websiteId && chatSessionId) {
+      recordUserInterest(message, websiteId, chatSessionId).catch(console.error);
     }
 
     // 转换消息历史为DeepSeek API格式

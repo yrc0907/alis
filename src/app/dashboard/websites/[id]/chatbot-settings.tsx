@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Script from 'next/script';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,7 +44,7 @@ export default function ChatbotSettings({ websiteId }: ChatbotSettingsProps) {
     maxMessagesInContext: 10,
     streamingEnabled: true
   });
-  const [, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
@@ -53,6 +54,7 @@ export default function ChatbotSettings({ websiteId }: ChatbotSettingsProps) {
   const [userMessage, setUserMessage] = useState("");
   const [chatMessages, setChatMessages] = useState<{ type: "bot" | "user", content: string, time: string }[]>([]);
   const [isTyping, setIsTyping] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   // 初始化聊天记录
   useEffect(() => {
@@ -69,48 +71,104 @@ export default function ChatbotSettings({ websiteId }: ChatbotSettingsProps) {
 
   // 获取聊天机器人配置
   const fetchChatbotConfig = useCallback(async () => {
+    setIsLoading(true);
     try {
-      setLoading(true);
-      // 在实际应用中，这里应该从API获取配置
-      // 目前我们使用模拟数据
-      setTimeout(() => {
-        setConfig({
-          ...config,
-          displayName: `${websiteId} 助手`, // 默认使用网站ID作为名称
-        });
-        setLoading(false);
-      }, 500);
+      const response = await fetch(`/api/websites/${websiteId}/chatbot-config`);
+      if (response.ok) {
+        const data = await response.json();
+        console.log('ChatbotSettings: Fetched config data:', data);
+        setConfig(data);
+      } else {
+        setError("无法加载聊天机器人配置。");
+      }
     } catch (error) {
       console.error("Error fetching chatbot config:", error);
-      setLoading(false);
+      setError("加载配置时出错。");
+    } finally {
+      setIsLoading(false);
     }
-  }, [config, websiteId]);
+  }, [websiteId]);
 
   // 保存聊天机器人配置
-  const saveChatbotConfig = async () => {
+  const saveChatbotConfig = async (newConfigData?: Partial<ChatbotConfig>) => {
+    setSaving(true);
+    setError("");
+    setSuccess(false);
+
+    const configToSave = { ...config, ...newConfigData };
+    console.log('ChatbotSettings: Saving config:', configToSave);
+
     try {
-      setSaving(true);
-      setError("");
-      setSuccess(false);
+      const response = await fetch(`/api/websites/${websiteId}/chatbot-config`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(configToSave),
+      });
 
-      // 在实际应用中，这里应该调用API保存配置
-      // 目前我们使用模拟延迟
-      setTimeout(() => {
+      if (response.ok) {
         setSuccess(true);
-        setSaving(false);
-
-        // 3秒后隐藏成功消息
-        setTimeout(() => {
-          setSuccess(false);
-        }, 3000);
-      }, 1000);
-    } catch (error: unknown) {
-      console.error("Error saving chatbot config:", error);
-      const errorMessage = error instanceof Error ? error.message : "保存配置失败，请稍后再试";
-      setError(errorMessage);
+        setTimeout(() => setSuccess(false), 3000);
+      } else {
+        const { error } = await response.json();
+        setError(error || '保存配置失败');
+      }
+    } catch (err) {
+      setError('保存配置时发生未知错误');
+    } finally {
       setSaving(false);
     }
   };
+
+  // 处理头像上传
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    setError("");
+
+    try {
+      // 1. Get pre-signed URL from our API
+      const presignResponse = await fetch('/api/upload/aws-s3/presign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          filename: file.name,
+          contentType: file.type,
+        }),
+      });
+
+      if (!presignResponse.ok) {
+        throw new Error('Failed to get pre-signed URL');
+      }
+
+      const { url, publicUrl } = await presignResponse.json();
+      console.log('ChatbotSettings: Received publicUrl from presign API:', publicUrl);
+
+      // 2. Upload file directly to AWS S3
+      const uploadResponse = await fetch(url, {
+        method: 'PUT',
+        headers: { 'Content-Type': file.type },
+        body: file,
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error('Failed to upload to S3');
+      }
+
+      // 3. Update the config with the final S3 URL
+      setConfig(prevConfig => ({ ...prevConfig, avatarUrl: publicUrl }));
+      // 4. Immediately save the updated config
+      await saveChatbotConfig({ avatarUrl: publicUrl });
+
+    } catch (err) {
+      console.error("Avatar upload failed:", err);
+      setError('上传头像时出错，请检查配置和网络');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
 
   // 初始加载数据
   useEffect(() => {
@@ -169,7 +227,7 @@ export default function ChatbotSettings({ websiteId }: ChatbotSettingsProps) {
             定制您网站的聊天机器人外观和行为
           </p>
         </div>
-        <Button onClick={saveChatbotConfig} disabled={saving}>
+        <Button onClick={() => saveChatbotConfig()} disabled={saving}>
           {saving ? "保存中..." : "保存设置"}
         </Button>
       </div>
@@ -262,15 +320,32 @@ export default function ChatbotSettings({ websiteId }: ChatbotSettingsProps) {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="avatarUrl">头像URL（可选）</Label>
-                <Input
-                  id="avatarUrl"
-                  value={config.avatarUrl || ""}
-                  onChange={(e) => setConfig({ ...config, avatarUrl: e.target.value })}
-                  placeholder="例如：https://example.com/avatar.png"
-                />
+                <Label>头像</Label>
+                <div className="flex items-center gap-4">
+                  {config.avatarUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={config.avatarUrl} alt="Avatar Preview" className="w-16 h-16 rounded-full object-cover" />
+                  ) : (
+                    <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center text-gray-400">
+                      无头像
+                    </div>
+                  )}
+                  <div className="flex gap-2">
+                    <Button asChild variant="outline">
+                      <label htmlFor="avatar-upload" className="cursor-pointer">
+                        {isUploading ? "上传中..." : "上传图片"}
+                      </label>
+                    </Button>
+                    <input id="avatar-upload" type="file" className="hidden" onChange={handleAvatarUpload} accept="image/*" disabled={isUploading} />
+                    {config.avatarUrl && (
+                      <Button variant="ghost" onClick={() => setConfig(prev => ({ ...prev, avatarUrl: '' }))}>
+                        移除
+                      </Button>
+                    )}
+                  </div>
+                </div>
                 <p className="text-xs text-muted-foreground">
-                  留空将使用默认头像
+                  推荐尺寸 128x128 像素
                 </p>
               </div>
             </CardContent>

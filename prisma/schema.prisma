@@ -50,6 +50,7 @@ model Website {
   chatSessions   ChatSession[]     // 网站的聊天会话
   appointments   Appointment[]     // 网站的预约记录
   userInterests  UserInterest[]    // 用户兴趣跟踪
+  chatbotConfig  ChatbotConfig?    // 聊天机器人配置
 }
 
 // 知识库条目模型
@@ -62,6 +63,24 @@ model KnowledgeItem {
   updatedAt DateTime @updatedAt
   websiteId String   // 所属网站
   website   Website  @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+}
+
+// 聊天机器人配置模型
+model ChatbotConfig {
+  id                   String   @id @default(cuid())
+  displayName          String   @default("客服助手")
+  welcomeMessage       String   @default("您好！我能为您提供什么帮助？")
+  primaryColor         String   @default("#fb923c")
+  position             String   @default("bottom-right") // "bottom-right" or "bottom-left"
+  avatarUrl            String?
+  model                String   @default("deepseek-chat")
+  temperature          Float    @default(0.7)
+  maxMessagesInContext Int      @default(10)
+  streamingEnabled     Boolean  @default(true)
+  websiteId            String   @unique
+  website              Website  @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 }
 
 // 知识库配置模型
